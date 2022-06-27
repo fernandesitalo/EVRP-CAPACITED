@@ -4,6 +4,7 @@ import gurobipy as gp
 from gurobipy import *
 import numpy as np
 from collections import namedtuple
+import glob
 
 Instance = namedtuple(
     'Instance',
@@ -42,8 +43,8 @@ class Graph:
         self.timeEdges = {(i, j): self.costEdges[i, j] / instance.velocity for i in range(self.n) for j in range(self.n)}
 
 
-def read_instance(file_name):
-    sys.stdin = open("instances/" + file_name, "r")
+def read_instance(file_dir):
+    sys.stdin = open(file_dir, "r")
     _ = input().split()
 
     coordinates = list()
@@ -99,7 +100,7 @@ def read_instance(file_name):
 def create_model(instance, vehicles_number):
     graph = Graph(instance)
     lpModel = gp.Model()
-    lpModel.setParam('OutputFlag', 0)
+    lpModel.setParam('OutputFlag', 1)
 
     # Create variables
     isEdgeUsedVar = lpModel.addVars(graph.costEdges.keys(), vtype=GRB.BINARY, name='isEdgeUsedVar')
@@ -115,7 +116,7 @@ def create_model(instance, vehicles_number):
             sum(isEdgeUsedVar[i, j] for j in allNodes) == 1
         )
 
-    csAndDepotNodes = instance.chargeStationsNodes + list(instance.depotNode)
+    csAndDepotNodes = instance.chargeStationsNodes + [instance.depotNode]
     for i in csAndDepotNodes:
         lpModel.addConstr(  # Charge stations visit limit constraint
             sum(isEdgeUsedVar[i, j] for j in allNodes) <= 1
@@ -133,29 +134,27 @@ def create_model(instance, vehicles_number):
     # Cargo Load constraints
     for i in allNodes:
         for j in allNodes:
-            lpModel.addConstr(
-                0
-                <= arriveCargoLoadVar[j]
-                <= instance.demands[i] * graph.costEdges[i, j] * instance.loadCapacity(1 - isEdgeUsedVar[i, j])
-            )
+            lpModel.addConstr(0 <= arriveCargoLoadVar[j])
+            lpModel.addConstr(arriveCargoLoadVar[j] <= instance.demands[i] * graph.costEdges[i, j] * instance.loadCapacity * (1 - isEdgeUsedVar[i, j]))
 
     lpModel.addConstr(
-        0 <= arriveCargoLoadVar[instance.depotNode] <= instance.loadCapacity
+        0 <= arriveCargoLoadVar[instance.depotNode]
+    )
+    lpModel.addConstr(
+        arriveCargoLoadVar[instance.depotNode] <= instance.loadCapacity
     )
 
     # Battery constraints
     for i in instance.clientsNodes:
         for j in allNodes:
             lpModel.addConstr(
-                arriveBatteryVar[j] <= arriveBatteryVar[i] - instance.batteryConsumptionRate * graph.costEdges[i, j] *
-                isEdgeUsedVar[i, j] + instance.batteryCapacity(1 - isEdgeUsedVar[i, j])
+                arriveBatteryVar[j] <= arriveBatteryVar[i] - instance.batteryConsumptionRate * graph.costEdges[i, j] * isEdgeUsedVar[i, j] + instance.batteryCapacity * (1 - isEdgeUsedVar[i, j])
             )
 
     for i in instance.chargeStationsNodes:
         for j in allNodes:
             lpModel.addConstr(
-                arriveBatteryVar[j] <= instance.batteryCapacity - instance.batteryConsumptionRate * graph.costEdges[
-                    i, j] * isEdgeUsedVar[i, j]
+                arriveBatteryVar[j] <= instance.batteryCapacity - instance.batteryConsumptionRate * graph.costEdges[i, j] * isEdgeUsedVar[i, j]
             )
 
     # time constraints
@@ -163,18 +162,18 @@ def create_model(instance, vehicles_number):
         for j in allNodes:
             if j != instance.depotNode:
                 lpModel.addConstr(
-                    arriveTimeVar[i] + instance.servicesTimes[i] + graph.timeEdges[i, j] - instance.availableTime(
-                        1 - isEdgeUsedVar[i, j]) <= arriveTimeVar[j]
+                    arriveTimeVar[i] + instance.servicesTimes[i] + graph.timeEdges[i, j] - instance.availableTime * (1 - isEdgeUsedVar[i, j]) <= arriveTimeVar[j]
                 )
 
     for j in allNodes:
         if j == instance.depotNode:
             continue
         lpModel.addConstr(
-            instance.servicesTimes[instance.depotNode] + graph.timeEdges[instance.depotNode, j]
-            <= arriveTimeVar[j]
-            <= instance.availableTime - instance.servicesTimes[instance.depotNode] + graph.timeEdges[
-                j, instance.depotNode]
+            instance.servicesTimes[instance.depotNode] + graph.timeEdges[instance.depotNode, j] <= arriveTimeVar[j]
+        )
+
+        lpModel.addConstr(
+            arriveTimeVar[j] <= instance.availableTime - instance.servicesTimes[instance.depotNode] + graph.timeEdges[j, instance.depotNode]
         )
 
     # vars limit constraints
@@ -183,17 +182,20 @@ def create_model(instance, vehicles_number):
     lpModel.setObjective(
         sum(isEdgeUsedVar[i, j] * graph.costEdges[i, j] for i in allNodes for j in allNodes)
     )
+    lpModel.ModelSense = GRB.MINIMIZE
 
     return lpModel
 
 
+def get_instances_dir():
+    dirs = glob.glob("instances/*")
+    return [d for d in dirs if "readme" not in d]
+
+
 if __name__ == "__main__":
-    instance: Instance = read_instance("c106c15.txt")
-    maxVehiclesNumbers = instance.clientsNodes
-
-    for fs in maxVehiclesNumbers:
-        model = create_model(instance, fs)
+    for d in get_instances_dir():
+        instance: Instance = read_instance(d)
+        maxVehiclesNumbers = instance.clientsNodes
+        model = create_model(instance, 5)
         model.optimize()
-
-    # file = open(str(clients) + "ClientsResult", 'w')
-    # sys.stdout = file
+        exit(0)
