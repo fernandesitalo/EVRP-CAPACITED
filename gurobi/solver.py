@@ -196,11 +196,13 @@ def run_model(model, instance, time):
 
     if model.SolCount <= 0:
         return "-", "-", time
+    model.Params.SolutionNumber = 0
 
     n = len(instance.nodesCoordinates)
-    solCost = model.ObjVal
+
     usedEdges = model.getAttr('X', model._isEdgeUsedVar)
     usedEVs = sum([1 for i in range(n) if usedEdges[instance.depotNode, i] > 0.5])
+    solCost = model.ObjVal
     totalTime = (datetime.now() - start).total_seconds()
 
     return round(solCost, 2), usedEVs, round(totalTime)
