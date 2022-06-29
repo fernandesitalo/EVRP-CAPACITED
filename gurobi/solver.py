@@ -1,8 +1,9 @@
-from json import load
-import sys
+from datetime import datetime
+import pandas as pd
+from math import ceil
+
 import gurobipy as gp
 from gurobipy import *
-import numpy as np
 from collections import namedtuple
 import glob
 
@@ -97,16 +98,17 @@ def read_instance(file_dir):
     )
 
 
-def create_model(instance, vehicles_number):
+def create_model(instance, vehicles_number, timelimit):
     graph = Graph(instance)
     lpModel = gp.Model()
     lpModel.setParam('OutputFlag', 1)
+    lpModel.setParam('TimeLimit', timelimit)
 
     # Create variables
     isEdgeUsedVar = lpModel.addVars(graph.costEdges.keys(), vtype=GRB.BINARY, name='isEdgeUsedVar')
     arriveCargoLoadVar = lpModel.addVars(graph.nodes, vtype=GRB.INTEGER, name='arriveCargoLoadVar')
-    arriveTimeVar = lpModel.addVars(graph.nodes, vtype=GRB.INTEGER, name='arriveTimeVar')
-    arriveBatteryVar = lpModel.addVars(graph.nodes, vtype=GRB.INTEGER, name='arriveBatteryVar')
+    arriveTimeVar = lpModel.addVars(graph.nodes, vtype=GRB.CONTINUOUS, name='arriveTimeVar')
+    arriveBatteryVar = lpModel.addVars(graph.nodes, vtype=GRB.CONTINUOUS, name='arriveBatteryVar')
     # todo, try to set the variables domains do float numbers instead of integer
 
     allNodes = graph.nodes
@@ -183,19 +185,65 @@ def create_model(instance, vehicles_number):
         sum(isEdgeUsedVar[i, j] * graph.costEdges[i, j] for i in allNodes for j in allNodes)
     )
     lpModel.ModelSense = GRB.MINIMIZE
+    lpModel._isEdgeUsedVar = isEdgeUsedVar
 
     return lpModel
 
 
+def run_model(model, instance, time):
+    start = datetime.now()
+    model.optimize()
+
+    if model.SolCount <= 0:
+        return "-", "-", time
+
+    n = len(instance.nodesCoordinates)
+    solCost = model.ObjVal
+    usedEdges = model.getAttr('X', model._isEdgeUsedVar)
+    usedEVs = sum([1 for i in range(n) if usedEdges[instance.depotNode, i] > 0.5])
+    totalTime = (datetime.now() - start).total_seconds()
+
+    return round(solCost, 2), usedEVs, round(totalTime)
+
+
 def get_instances_dir():
     dirs = glob.glob("instances/*")
-    return [d for d in dirs if "readme" not in d]
+    return [_ for _ in dirs if "readme" not in _]
 
 
 if __name__ == "__main__":
+    solutions = dict(
+        instance=[],
+        clients=[],
+        chargeStations=[],
+        batteryCapacity=[],
+        loadCapacity=[],
+        fs=[],
+        usedEVs=[],
+        time=[],
+        f=[]
+    )
+
     for d in get_instances_dir():
+    # for d in ["instances/c208C5.txt"]:
         instance: Instance = read_instance(d)
-        maxVehiclesNumbers = instance.clientsNodes
-        model = create_model(instance, 5)
-        model.optimize()
-        exit(0)
+
+        print(d)
+
+        fs = ceil(len(instance.clientsNodes)/2.0)
+        timelimit = 60*5
+        model = create_model(instance, fs, timelimit)
+        solCost, usedEvs, totalTime = run_model(model, instance, timelimit)
+
+        solutions['instance'].append(d)
+        solutions['batteryCapacity'].append(instance.batteryCapacity)
+        solutions['loadCapacity'].append(instance.loadCapacity)
+        solutions['usedEVs'].append(usedEvs)
+        solutions['f'].append(str(solCost).replace('.', ','))
+        solutions['time'].append(str(totalTime).replace('.', ','))
+        solutions['fs'].append(fs)
+        solutions['clients'].append(len(instance.clientsNodes))
+        solutions['chargeStations'].append(len(instance.chargeStationsNodes))
+
+        df_solutions = pd.DataFrame(solutions)
+        df_solutions.to_csv('solutions.csv', sep='\t', index=False)

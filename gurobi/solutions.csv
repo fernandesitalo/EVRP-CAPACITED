@@ -1,0 +1,5 @@
+instance	clients	chargeStations	batteryCapacity	loadCapacity	fs	usedEVs	time	f
+instances\c101C10.txt	10	5	77.75	200.0	5	1	0	246,18
+instances\c101C5.txt	5	3	77.75	200.0	3	1	0	182,12
+instances\c101_21.txt	100	21	79.69	200.0	50	-	300	-
+instances\c102_21.txt	100	21	79.69	200.0	50	-	300	-
