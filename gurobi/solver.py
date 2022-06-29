@@ -109,7 +109,6 @@ def create_model(instance, vehicles_number, timelimit):
     arriveCargoLoadVar = lpModel.addVars(graph.nodes, vtype=GRB.INTEGER, name='arriveCargoLoadVar')
     arriveTimeVar = lpModel.addVars(graph.nodes, vtype=GRB.CONTINUOUS, name='arriveTimeVar')
     arriveBatteryVar = lpModel.addVars(graph.nodes, vtype=GRB.CONTINUOUS, name='arriveBatteryVar')
-    # todo, try to set the variables domains do float numbers instead of integer
 
     allNodes = graph.nodes
 
