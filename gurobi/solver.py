@@ -226,13 +226,11 @@ if __name__ == "__main__":
     )
 
     for d in get_instances_dir():
-    # for d in ["instances/c208C5.txt"]:
+    # for d in ["instances/r106_21.txt"]:
         instance: Instance = read_instance(d)
-
-        print(d)
-
         fs = ceil(len(instance.clientsNodes)/2.0)
-        timelimit = 60*5
+
+        timelimit = 60 * 10
         model = create_model(instance, fs, timelimit)
         solCost, usedEvs, totalTime = run_model(model, instance, timelimit)
 
