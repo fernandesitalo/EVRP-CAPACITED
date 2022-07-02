@@ -24,10 +24,10 @@ public class ECVRP implements Evaluator<Integer> {
     public List<Integer> chargeStationsNodes;
     public Integer depotNode;
     public Integer size;
+    public List<List<Double>> dist;
+
 
     public List<Integer> solution;
-
-    public List<List<Double>> dist;
 
 
     public ECVRP(String filename) throws IOException {
@@ -45,7 +45,6 @@ public class ECVRP implements Evaluator<Integer> {
         this.batteryChargeRate = 0.;
         this.size = 0;
         this.dist = new ArrayList<>();
-
         this.solution = new ArrayList<>();
 
         readInput(filename);
@@ -131,6 +130,10 @@ public class ECVRP implements Evaluator<Integer> {
         }
     }
 
+    protected Double getDist(int a, int b){
+        return this.dist.get(a).get(b);
+    }
+
     @Override
     public Integer getDomainSize() {
         return size;
@@ -141,31 +144,48 @@ public class ECVRP implements Evaluator<Integer> {
         return sol.cost = evaluateECVRP();
     }
 
+    public Double evaluateECVRP() {
+        // TODO: implement
+        Double sum = 0.;
+        for(int i = 0 ; i < this.solution.size() - 1; ++i){
+            sum += getDist(i,i+1);
+        }
+        return sum;
+    }
+
+    protected boolean isFeasible(){
+        // TODO: implement
+        return true;
+    }
+
+    protected void makeFeasible(){
+        // TODO: implement
+    }
+
+
     @Override
     public Double evaluateInsertionCost(Integer elem, Solution<Integer> sol) {
+        // TODO: implement
         return 0.;
     }
 
     @Override
     public Double evaluateRemovalCost(Integer elem, Solution<Integer> sol) {
+        // TODO: implement
         return 0.;
     }
 
     @Override
     public Double evaluateExchangeCost(Integer elemIn, Integer elemOut, Solution<Integer> sol) {
+        // TODO: implement
         return 0.;
-    }
-
-
-    public Double evaluateECVRP() {
-        // como vamos calcular????
-        return 10.;
     }
 
 
     // just to test
     public static void main(String[] args) throws IOException {
         ECVRP ecvrp = new ECVRP("instances/c101_21.txt");
+        // TODO: create a random solution for test and evaluate
     }
 
 }
