@@ -4,11 +4,10 @@ import problems.Evaluator;
 import solutions.Solution;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 import static java.lang.Math.max;
+import static java.lang.Math.sqrt;
 
 
 public class ECVRP implements Evaluator<Integer> {
@@ -17,18 +16,19 @@ public class ECVRP implements Evaluator<Integer> {
     public Double batteryConsumptionRate;
     public Double batteryChargeRate;
     public Double velocity;
-
     public List<Double> demands;
     public List<Coordinates> nodesCoordinates;
-
     public Double availableTime;
     public List<Double> servicesTimes;
-
     public List<Integer> clientsNodes;
     public List<Integer> chargeStationsNodes;
     public Integer depotNode;
-
     public Integer size;
+
+    public List<Integer> solution;
+
+    public List<List<Double>> dist;
+
 
     public ECVRP(String filename) throws IOException {
         this.demands = new ArrayList<>();
@@ -44,75 +44,12 @@ public class ECVRP implements Evaluator<Integer> {
         this.batteryConsumptionRate = 0.;
         this.batteryChargeRate = 0.;
         this.size = 0;
+        this.dist = new ArrayList<>();
+
+        this.solution = new ArrayList<>();
 
         readInput(filename);
-    }
-
-    @Override
-    public Integer getDomainSize() {
-        return size;
-    }
-
-    @Override
-    public Double evaluate(Solution<Integer> sol) {
-        return sol.cost = evaluateECVRP();
-    }
-
-    @Override
-    public Double evaluateInsertionCost(Integer elem, Solution<Integer> sol) {
-        return evaluateInsertionECVRP(elem);
-    }
-
-    public Double evaluateECVRP() {
-        // como vamos calcular????
-        return 10.;
-    }
-
-    @Override
-    public Double evaluateRemovalCost(Integer elem, Solution<Integer> sol) {
-        return evaluateRemovalECVRP(elem);
-    }
-
-    @Override
-    public Double evaluateExchangeCost(Integer elemIn, Integer elemOut, Solution<Integer> sol) {
-        return evaluateExchangeECVRP(elemIn, elemOut);
-    }
-
-    public Double evaluateInsertionECVRP(int i) {
-        return evaluateContributionECVRP(i);
-    }
-
-    public Double evaluateRemovalECVRP(int i) {
-        return evaluateContributionECVRP(i);
-    }
-
-    /**
-     * Determines the contribution to the ECVRP objective function from the
-     * exchange of two elements one belonging to the solution and the other not.
-     *
-     * @param nodeA
-     *            The index of the element that is considered entering the
-     *            solution.
-     * @param nodeB
-     *            The index of the element that is considered exiting the
-     *            solution.
-     * @return The variation of the objective function resulting from the
-     *         exchange.
-     */
-    public Double evaluateExchangeECVRP(int nodeA, int nodeB) {
-
-        Double sum = 0.0;
-
-        if (nodeA == nodeB)
-            return 0.0;
-
-        sum += evaluateContributionECVRP(nodeA);
-        sum -= evaluateContributionECVRP(nodeB);
-        return sum;
-    }
-
-    private Double evaluateContributionECVRP(int i) {
-        return 1.;
+        calculateEuclideanDistance();
     }
 
     protected void readInput(String filename) throws IOException {
@@ -178,7 +115,53 @@ public class ECVRP implements Evaluator<Integer> {
 
         while(stok.nextToken() != StreamTokenizer.TT_NUMBER){}
         velocity = stok.nval;
+
+        size = nodesCoordinates.size();
     }
+
+    protected void calculateEuclideanDistance(){
+        for(int i = 0; i < this.size; ++i) {
+            this.dist.add(new ArrayList<>());
+            for(int j = 0; j < this.size; ++j) {
+                Double deltaX = nodesCoordinates.get(i).x - nodesCoordinates.get(j).x;
+                Double deltaY = nodesCoordinates.get(i).y - nodesCoordinates.get(j).y;
+                Double calcDist = sqrt(deltaX*deltaX + deltaY*deltaY);
+                dist.get(i).add(calcDist);
+            }
+        }
+    }
+
+    @Override
+    public Integer getDomainSize() {
+        return size;
+    }
+
+    @Override
+    public Double evaluate(Solution<Integer> sol) {
+        return sol.cost = evaluateECVRP();
+    }
+
+    @Override
+    public Double evaluateInsertionCost(Integer elem, Solution<Integer> sol) {
+        return 0.;
+    }
+
+    @Override
+    public Double evaluateRemovalCost(Integer elem, Solution<Integer> sol) {
+        return 0.;
+    }
+
+    @Override
+    public Double evaluateExchangeCost(Integer elemIn, Integer elemOut, Solution<Integer> sol) {
+        return 0.;
+    }
+
+
+    public Double evaluateECVRP() {
+        // como vamos calcular????
+        return 10.;
+    }
+
 
     // just to test
     public static void main(String[] args) throws IOException {

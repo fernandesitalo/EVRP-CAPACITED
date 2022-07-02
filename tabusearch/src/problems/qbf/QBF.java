@@ -9,20 +9,6 @@ import java.util.Arrays;
 import problems.Evaluator;
 import solutions.Solution;
 
-/**
- * A quadractic binary function (QBF) is a function that can be expressed as the
- * sum of quadractic terms: f(x) = \sum{i,j}{a_{ij}*x_i*x_j}. In matricial form
- * a QBF can be expressed as f(x) = x'.A.x 
- * The problem of minimizing a QBF is NP-hard [1], even when no constraints
- * are considered.
- * 
- * [1] Kochenberger, et al. The unconstrained binary quadratic programming
- * problem: a survey. J Comb Optim (2014) 28:58–81. DOI
- * 10.1007/s10878-014-9734-0.
- * 
- * @author ccavellucci, fusberti
- *
- */
 public class QBF implements Evaluator<Integer> {
 
 	/**
@@ -39,6 +25,9 @@ public class QBF implements Evaluator<Integer> {
 	 * The matrix A of coefficients for the QBF f(x) = x'.A.x
 	 */
 	public Double[][] A;
+
+
+
 
 	/**
 	 * The constructor for QuadracticBinaryFunction class. The filename of the
