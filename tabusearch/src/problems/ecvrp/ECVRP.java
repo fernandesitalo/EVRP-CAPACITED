@@ -1,19 +1,18 @@
 package problems.ecvrp;
 
 import problems.Evaluator;
-import solutions.Block;
+import solutions.Route;
 import solutions.Solution;
 
 import java.io.*;
 import java.util.*;
 
 import static java.lang.Math.max;
-import static java.lang.Math.sqrt;
 import static problems.ecvrp.Utils.DEPOT_NODE;
 import static problems.ecvrp.Utils.GOOD_BLOCK;
 
 
-public class ECVRP implements Evaluator<Block> {
+public class ECVRP implements Evaluator<Route> {
     public Double batteryCapacity;
     public Double loadCapacity;
     public Double batteryConsumptionRate;
@@ -26,11 +25,10 @@ public class ECVRP implements Evaluator<Block> {
     public List<Integer> clientsNodes;
     public List<Integer> chargeStationsNodes;
     public Integer depotNode;
-    public Integer size;
     public List<List<Double>> dist;
 
 
-    public Solution<Block> blocks;
+    public Solution<Route> routes;
 
 
     public ECVRP(String filename) throws IOException {
@@ -46,12 +44,10 @@ public class ECVRP implements Evaluator<Block> {
         this.loadCapacity = 0.;
         this.batteryConsumptionRate = 0.;
         this.batteryChargeRate = 0.;
-        this.size = 0;
         this.dist = new ArrayList<>();
-        this.blocks = new Solution<>();
+        this.routes = new Solution<>();
 
         readInput(filename);
-        calculateEuclideanDistance();
     }
 
     protected void readInput(String filename) throws IOException {
@@ -117,21 +113,6 @@ public class ECVRP implements Evaluator<Block> {
 
         while(stok.nextToken() != StreamTokenizer.TT_NUMBER){}
         velocity = stok.nval;
-
-        // numero de caminhoes/carros
-        size = this.clientsNodes.size();
-    }
-
-    protected void calculateEuclideanDistance(){
-        for(int i = 0; i < this.size; ++i) {
-            this.dist.add(new ArrayList<>());
-            for(int j = 0; j < this.size; ++j) {
-                Double deltaX = nodesCoordinates.get(i).x - nodesCoordinates.get(j).x;
-                Double deltaY = nodesCoordinates.get(i).y - nodesCoordinates.get(j).y;
-                Double calcDist = sqrt(deltaX*deltaX + deltaY*deltaY);
-                dist.get(i).add(calcDist);
-            }
-        }
     }
 
     protected Double getDist(int a, int b){
@@ -139,41 +120,33 @@ public class ECVRP implements Evaluator<Block> {
     }
 
     @Override
-    public Integer getDomainSize() {
-        // numero de blocks!!! isto e, numero de carros
-        return size;
+    public List<Integer> getClients() {
+        return this.clientsNodes;
     }
 
     @Override
-    public Double evaluate(Solution<Block> sol) {
-        System.out.println("QUANTIDADE DE CARROS: " + blocks.size());
+    public List<Integer> getChargingStations() {
+        return this.chargeStationsNodes;
+    }
+
+    @Override
+    public Integer getNumberBlocks() {
+        return 5;
+    }
+
+    @Override
+    public Double evaluate(Solution<Route> sol) {
+        System.out.println("QUANTIDADE DE CARROS: " + routes.size());
         Double sum = 0.;
-        for(int i = 0 ; i < blocks.size() ; ++i){
-            sum += evaluateBlock(blocks.get(i));
+        for(int i = 0; i < routes.size() ; ++i){
+            sum += evaluateRoute(routes.get(i));
         }
-        blocks.cost = sum;
+        routes.cost = sum;
         return sum;
     }
 
-    @Override
-    public Double evaluateInsertionCost(Block elem, Solution<Block> sol) {
-        // TODO: implement - como inserir um block???
-        return null;
-    }
 
-    @Override
-    public Double evaluateRemovalCost(Block elem, Solution<Block> sol) {
-        // TODO: implement - como remover um block???
-        return null
-    }
-
-    @Override
-    public Double evaluateExchangeCost(Block elemIn, Block elemOut, Solution<Block> sol) {
-        // TODO: implement - como avalivar o custo de troca de um block para outro????
-        return null;
-    }
-
-    protected Double evaluateBlock(Block block) {
+    protected Double evaluateRoute(Route route) {
 
         Truck truck = new Truck(
                 this.batteryCapacity,
@@ -181,14 +154,15 @@ public class ECVRP implements Evaluator<Block> {
                 this.loadCapacity,
                 this.batteryChargeRate,
                 this.batteryConsumptionRate,
+                this.velocity,
                 this.nodesCoordinates.get(DEPOT_NODE),
                 0.,
                 GOOD_BLOCK);
 
-        block.resetIndex();
+        route.resetIndex();
 
         // talvez tenha que ordenar o vetor de charging station pelo indice
-        block.getChargingStations().sort((cs1, cs2) -> {
+        route.getChargingStations().sort((cs1, cs2) -> {
             //Compares its two arguments for order.
             // Returns a negative integer, zero, or a positive integer
             // as the first argument is less than, equal to, or greater than the second.
@@ -197,23 +171,23 @@ public class ECVRP implements Evaluator<Block> {
             return 0;
         });
 
-        while (block.hasNextClient()){
-            if (block.visitCSNow()) {
-                int csIdx = block.getCurrentCs().getChargingStation();
+        while (route.hasNextClient()){
+            if (route.visitCSNow()) {
+                int csIdx = route.getCurrentCs().getChargingStation();
                 truck.goToNextChargingStation(this.batteryCapacity,this.nodesCoordinates.get(csIdx));
-                block.nextCS();
+                route.nextCS();
                 continue;
             }
             // go to the next client
-            int clientIndex = block.getCurrentClient();
+            int clientIndex = route.getCurrentClient();
             truck.goToNextNode(this.nodesCoordinates.get(clientIndex), this.demands.get(clientIndex));
-            block.nextClient();
+            route.nextClient();
         }
         // go to depot
         truck.goToNextNode(this.nodesCoordinates.get(DEPOT_NODE), this.demands.get(DEPOT_NODE));
-        block.setCost(truck.getCost());
+        route.setCost(truck.getCost());
 
-        return block.getCost();
+        return route.getCost();
     }
 
 

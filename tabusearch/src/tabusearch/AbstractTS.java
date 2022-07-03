@@ -65,36 +65,11 @@ public abstract class AbstractTS<E> {
 	 */
 	protected Integer tenure;
 
-	/**
-	 * the Candidate List of elements to enter the solution.
-	 */
-	protected ArrayList<E> CL;
-
-	/**
-	 * the Restricted Candidate List of elements to enter the solution.
-	 */
-	protected ArrayList<E> RCL;
 	
 	/**
 	 * the Tabu List of elements to enter the solution.
 	 */
 	protected ArrayDeque<E> TL;
-
-	/**
-	 * Creates the Candidate List, which is an ArrayList of candidate elements
-	 * that can enter a solution.
-	 * 
-	 * @return The Candidate List.
-	 */
-	public abstract ArrayList<E> makeCL();
-
-	/**
-	 * Creates the Restricted Candidate List, which is an ArrayList of the best
-	 * candidate elements that can enter a solution. 
-	 * 
-	 * @return The Restricted Candidate List.
-	 */
-	public abstract ArrayList<E> makeRCL();
 	
 	/**
 	 * Creates the Tabu List, which is an ArrayDeque of the Tabu
@@ -104,13 +79,6 @@ public abstract class AbstractTS<E> {
 	 * @return The Tabu List.
 	 */
 	public abstract ArrayDeque<E> makeTL();
-
-	/**
-	 * Updates the Candidate List according to the incumbent solution
-	 * {@link #sol}. In other words, this method is responsible for
-	 * updating the costs of the candidate solution elements.
-	 */
-	public abstract void updateCL();
 
 	/**
 	 * Creates a new solution which is empty, i.e., does not contain any
@@ -148,60 +116,7 @@ public abstract class AbstractTS<E> {
 		this.iterations = iterations;
 	}
 
-	/**
-	 * The TS constructive heuristic, which is responsible for building a
-	 * feasible solution by selecting in a greedy fashion, candidate
-	 * elements to enter the solution.
-	 * 
-	 * @return A feasible solution to the problem being minimized.
-	 */
-	public Solution<E> constructiveHeuristic() {
-
-		CL = makeCL();
-		RCL = makeRCL();
-		sol = createEmptySol();
-		cost = Double.POSITIVE_INFINITY;
-
-		/* Main loop, which repeats until the stopping criteria is reached. */
-		while (!constructiveStopCriteria()) {
-
-			Double maxCost = Double.NEGATIVE_INFINITY, minCost = Double.POSITIVE_INFINITY;
-			cost = sol.cost;
-			updateCL();
-
-			/*
-			 * Explore all candidate elements to enter the solution, saving the
-			 * highest and lowest cost variation achieved by the candidates.
-			 */
-			for (E c : CL) {
-				Double deltaCost = ObjFunction.evaluateInsertionCost(c, sol);
-				if (deltaCost < minCost)
-					minCost = deltaCost;
-				if (deltaCost > maxCost)
-					maxCost = deltaCost;
-			}
-
-			/*
-			 * Among all candidates, insert into the RCL those with the highest
-			 * performance.
-			 */
-			for (E c : CL) {
-				Double deltaCost = ObjFunction.evaluateInsertionCost(c, sol);
-				if (deltaCost <= minCost) {
-					RCL.add(c);
-				}
-			}
-		
-			/* Choose a candidate randomly from the RCL */
-			int rndIndex = rng.nextInt(RCL.size());
-			E inCand = RCL.get(rndIndex);
-			CL.remove(inCand);
-			sol.add(inCand);
-			ObjFunction.evaluate(sol);
-			RCL.clear();
-
-		}
-
+	public Solution<E> initialSolution() {
 		return sol;
 	}
 
@@ -215,7 +130,7 @@ public abstract class AbstractTS<E> {
 	public Solution<E> solve() {
 
 		bestSol = createEmptySol();
-		constructiveHeuristic();
+		initialSolution();
 		TL = makeTL();
 		for (int i = 0; i < iterations; i++) {
 			neighborhoodMove();

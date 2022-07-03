@@ -16,6 +16,7 @@ public class Truck {
 
     Double batteryChargeRate;
     Double batteryConsumptionRate;
+    Double velocity;
 
     Coordinates coord;
 
@@ -38,7 +39,7 @@ public class Truck {
 
         this.battery -= batteryNeeded;
 
-        Double travelTime = dist;
+        Double travelTime = dist/this.velocity;
         this.time -= travelTime;
 
         if (0 > this.time) {
@@ -80,7 +81,7 @@ public class Truck {
         }
 
         // handling with time ------------------------------------------------------
-        Double travelTime = dist;
+        Double travelTime = dist/this.velocity;
         this.time -= travelTime;
         if (0 > this.time) {
             // apply penalty for this move

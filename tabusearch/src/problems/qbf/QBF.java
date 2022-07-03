@@ -68,7 +68,7 @@ public class QBF implements Evaluator<Integer> {
 	 * @see problems.Evaluator#getDomainSize()
 	 */
 	@Override
-	public Integer getDomainSize() {
+	public Integer getNumberTrucks() {
 		return size;
 	}
 

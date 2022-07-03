@@ -9,7 +9,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Block {
+public class Route {
     public List<Integer> clients;
     public List<MyPair> chargingStations;
 

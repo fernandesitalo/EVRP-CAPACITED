@@ -1,49 +1,20 @@
 package problems.ecvrp.solver;
 
 import problems.ecvrp.ECVRP;
-import solutions.Block;
+import solutions.Route;
+import solutions.MyPair;
 import solutions.Solution;
 import tabusearch.AbstractTS;
 
 import java.io.IOException;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 
-public class TS_ECVRP extends AbstractTS<Block> {
+public class TS_ECVRP extends AbstractTS<Route> {
 
-	private final Block fake = Block.builder().build();
+	private final Route fake = Route.builder().build();
 	
 	public TS_ECVRP(Integer tenure, Integer iterations, String filename) throws IOException {
 		super(new ECVRP(filename), tenure, iterations);
-	}
-
-	/**
-	 * Creates the Candidate List, which is an ArrayList of candidate elements
-	 * that can enter a solution.
-	 *
-	 * @return The Candidate List.
-	 */
-	@Override
-	public ArrayList<Block> makeCL() {
-		ArrayList<Block> _CL = new ArrayList<Block>();
-
-		for (int i = 0; i < ObjFunction.getDomainSize(); i++) {
-			Block cand = Block.builder().build();
-			_CL.add(cand);
-		}
-		return _CL;
-	}
-
-	/**
-	 * Creates the Restricted Candidate List, which is an ArrayList of the best
-	 * candidate elements that can enter a solution.
-	 *
-	 * @return The Restricted Candidate List.
-	 */
-	@Override
-	public ArrayList<Block> makeRCL() {
-		ArrayList<Block> _RCL = new ArrayList<Block>();
-		return _RCL;
 	}
 
 
@@ -55,90 +26,25 @@ public class TS_ECVRP extends AbstractTS<Block> {
 	 * @return The Tabu List.
 	 */
 	@Override
-	public ArrayDeque<Block> makeTL() {
-		ArrayDeque<Block> _TS = new ArrayDeque<Block>(2*tenure);
+	public ArrayDeque<Route> makeTL() {
+		ArrayDeque<Route> _TS = new ArrayDeque<Route>(2*tenure);
 		for (int i=0; i<2*tenure; i++) {
 			_TS.add(fake);
 		}
 		return _TS;
 	}
-	
-	@Override
-	public void updateCL() {
-		// do nothing
-	}
 
 
 	@Override
-	public Solution<Block> createEmptySol() {
-		Solution<Block> sol = new Solution<Block>();
+	public Solution<Route> createEmptySol() {
+		Solution<Route> sol = new Solution<Route>();
 		sol.cost = 0.0;
 		return sol;
 	}
 
 
 	@Override
-	public Solution<Block> neighborhoodMove() {
-
-		Double minDeltaCost;
-		Block bestCandIn = null, bestCandOut = null;
-
-		minDeltaCost = Double.POSITIVE_INFINITY;
-		updateCL();
-		// Evaluate insertions
-		for (Block candIn : CL) {
-			Double deltaCost = ObjFunction.evaluateInsertionCost(candIn, sol);
-			if (!TL.contains(candIn) || sol.cost+deltaCost < bestSol.cost) {
-				if (deltaCost < minDeltaCost) {
-					minDeltaCost = deltaCost;
-					bestCandIn = candIn;
-					bestCandOut = null;
-				}
-			}
-		}
-		// Evaluate removals
-		for (Block candOut : sol) {
-			Double deltaCost = ObjFunction.evaluateRemovalCost(candOut, sol);
-			if (!TL.contains(candOut) || sol.cost+deltaCost < bestSol.cost) {
-				if (deltaCost < minDeltaCost) {
-					minDeltaCost = deltaCost;
-					bestCandIn = null;
-					bestCandOut = candOut;
-				}
-			}
-		}
-		// Evaluate exchanges
-		for (Block candIn : CL) {
-			for (Block candOut : sol) {
-				Double deltaCost = ObjFunction.evaluateExchangeCost(candIn, candOut, sol);
-				if ((!TL.contains(candIn) && !TL.contains(candOut)) || sol.cost+deltaCost < bestSol.cost) {
-					if (deltaCost < minDeltaCost) {
-						minDeltaCost = deltaCost;
-						bestCandIn = candIn;
-						bestCandOut = candOut;
-					}
-				}
-			}
-		}
-		// Implement the best non-tabu move
-		TL.poll();
-		if (bestCandOut != null) {
-			sol.remove(bestCandOut);
-			CL.add(bestCandOut);
-			TL.add(bestCandOut);
-		} else {
-			TL.add(fake);
-		}
-		TL.poll();
-		if (bestCandIn != null) {
-			sol.add(bestCandIn);
-			CL.remove(bestCandIn);
-			TL.add(bestCandIn);
-		} else {
-			TL.add(fake);
-		}
-		ObjFunction.evaluate(sol);
-		
+	public Solution<Route> neighborhoodMove() {
 		return null;
 	}
 
@@ -150,7 +56,7 @@ public class TS_ECVRP extends AbstractTS<Block> {
 
 		TS_ECVRP tabusearch = new TS_ECVRP(20, 1000, "instances/c101_21.txt");
 
-		Solution<Block> bestSol = tabusearch.solve();
+		Solution<Route> bestSol = tabusearch.solve();
 
 		System.out.println("maxVal = " + bestSol);
 		long endTime   = System.currentTimeMillis();

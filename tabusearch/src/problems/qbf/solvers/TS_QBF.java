@@ -38,7 +38,7 @@ public class TS_QBF extends AbstractTS<Integer> {
 	public ArrayList<Integer> makeCL() {
 
 		ArrayList<Integer> _CL = new ArrayList<Integer>();
-		for (int i = 0; i < ObjFunction.getDomainSize(); i++) {
+		for (int i = 0; i < ObjFunction.getNumberTrucks(); i++) {
 			Integer cand = Integer.valueOf(i);
 			_CL.add(cand);
 		}
