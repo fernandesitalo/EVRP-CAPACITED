@@ -118,7 +118,8 @@ public class ECVRP implements Evaluator<Block> {
         while(stok.nextToken() != StreamTokenizer.TT_NUMBER){}
         velocity = stok.nval;
 
-        size = nodesCoordinates.size();
+        // numero de caminhoes/carros
+        size = this.clientsNodes.size();
     }
 
     protected void calculateEuclideanDistance(){
@@ -139,6 +140,7 @@ public class ECVRP implements Evaluator<Block> {
 
     @Override
     public Integer getDomainSize() {
+        // numero de blocks!!! isto e, numero de carros
         return size;
     }
 
@@ -155,19 +157,19 @@ public class ECVRP implements Evaluator<Block> {
 
     @Override
     public Double evaluateInsertionCost(Block elem, Solution<Block> sol) {
-        // TODO: implement
+        // TODO: implement - como inserir um block???
         return null;
     }
 
     @Override
     public Double evaluateRemovalCost(Block elem, Solution<Block> sol) {
-        // TODO: implement
-        return null;
+        // TODO: implement - como remover um block???
+        return null
     }
 
     @Override
     public Double evaluateExchangeCost(Block elemIn, Block elemOut, Solution<Block> sol) {
-        // TODO: implement
+        // TODO: implement - como avalivar o custo de troca de um block para outro????
         return null;
     }
 
@@ -184,6 +186,16 @@ public class ECVRP implements Evaluator<Block> {
                 GOOD_BLOCK);
 
         block.resetIndex();
+
+        // talvez tenha que ordenar o vetor de charging station pelo indice
+        block.getChargingStations().sort((cs1, cs2) -> {
+            //Compares its two arguments for order.
+            // Returns a negative integer, zero, or a positive integer
+            // as the first argument is less than, equal to, or greater than the second.
+            if (cs1.getIndex() > cs2.getIndex()) return 1;
+            if (cs1.getIndex() < cs2.getIndex()) return -1;
+            return 0;
+        });
 
         while (block.hasNextClient()){
             if (block.visitCSNow()) {

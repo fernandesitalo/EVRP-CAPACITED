@@ -11,33 +11,52 @@ import java.util.ArrayList;
 
 public class TS_ECVRP extends AbstractTS<Block> {
 
-	private final Integer fake = -1;
+	private final Block fake = Block.builder().build();
 	
 	public TS_ECVRP(Integer tenure, Integer iterations, String filename) throws IOException {
 		super(new ECVRP(filename), tenure, iterations);
 	}
 
+	/**
+	 * Creates the Candidate List, which is an ArrayList of candidate elements
+	 * that can enter a solution.
+	 *
+	 * @return The Candidate List.
+	 */
 	@Override
 	public ArrayList<Block> makeCL() {
 		ArrayList<Block> _CL = new ArrayList<Block>();
+
 		for (int i = 0; i < ObjFunction.getDomainSize(); i++) {
-			Integer cand = i;
+			Block cand = Block.builder().build();
 			_CL.add(cand);
 		}
 		return _CL;
 	}
 
-
+	/**
+	 * Creates the Restricted Candidate List, which is an ArrayList of the best
+	 * candidate elements that can enter a solution.
+	 *
+	 * @return The Restricted Candidate List.
+	 */
 	@Override
 	public ArrayList<Block> makeRCL() {
 		ArrayList<Block> _RCL = new ArrayList<Block>();
 		return _RCL;
 	}
-	
 
+
+	/**
+	 * Creates the Tabu List, which is an ArrayDeque of the Tabu
+	 * candidate elements. The number of iterations a candidate
+	 * is considered tabu is given by the Tabu Tenure {@link #tenure}
+	 *
+	 * @return The Tabu List.
+	 */
 	@Override
 	public ArrayDeque<Block> makeTL() {
-		ArrayDeque<Integer> _TS = new ArrayDeque<Integer>(2*tenure);
+		ArrayDeque<Block> _TS = new ArrayDeque<Block>(2*tenure);
 		for (int i=0; i<2*tenure; i++) {
 			_TS.add(fake);
 		}
@@ -62,7 +81,7 @@ public class TS_ECVRP extends AbstractTS<Block> {
 	public Solution<Block> neighborhoodMove() {
 
 		Double minDeltaCost;
-		Integer bestCandIn = null, bestCandOut = null;
+		Block bestCandIn = null, bestCandOut = null;
 
 		minDeltaCost = Double.POSITIVE_INFINITY;
 		updateCL();
@@ -131,7 +150,7 @@ public class TS_ECVRP extends AbstractTS<Block> {
 
 		TS_ECVRP tabusearch = new TS_ECVRP(20, 1000, "instances/c101_21.txt");
 
-		Solution<Integer> bestSol = tabusearch.solve();
+		Solution<Block> bestSol = tabusearch.solve();
 
 		System.out.println("maxVal = " + bestSol);
 		long endTime   = System.currentTimeMillis();

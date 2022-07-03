@@ -4,23 +4,14 @@ import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 
-import metaheuristics.tabusearch.AbstractTS;
 import problems.qbf.QBF_Inverse;
 import solutions.Solution;
+import tabusearch.AbstractTS;
 
 
-
-/**
- * Metaheuristic TS (Tabu Search) for obtaining an optimal solution to a QBF
- * (Quadractive Binary Function -- {@link #QuadracticBinaryFunction}).
- * Since by default this TS considers minimization problems, an inverse QBF
- *  function is adopted.
- * 
- * @author ccavellucci, fusberti
- */
 public class TS_QBF extends AbstractTS<Integer> {
 	
-	private final Integer fake = new Integer(-1);
+	private final Integer fake = Integer.valueOf(-1);
 
 	/**
 	 * Constructor for the TS_QBF class. An inverse QBF objective function is
@@ -48,7 +39,7 @@ public class TS_QBF extends AbstractTS<Integer> {
 
 		ArrayList<Integer> _CL = new ArrayList<Integer>();
 		for (int i = 0; i < ObjFunction.getDomainSize(); i++) {
-			Integer cand = new Integer(i);
+			Integer cand = Integer.valueOf(i);
 			_CL.add(cand);
 		}
 
@@ -185,7 +176,7 @@ public class TS_QBF extends AbstractTS<Integer> {
 	public static void main(String[] args) throws IOException {
 
 		long startTime = System.currentTimeMillis();
-		TS_QBF tabusearch = new TS_QBF(20, 1000, "tabusearch/instances/qbf/qbf020");
+		TS_QBF tabusearch = new TS_QBF(20, 1000, "tabusearch/src/problems/qbf/qbf020");
 		Solution<Integer> bestSol = tabusearch.solve();
 		System.out.println("maxVal = " + bestSol);
 		long endTime   = System.currentTimeMillis();
