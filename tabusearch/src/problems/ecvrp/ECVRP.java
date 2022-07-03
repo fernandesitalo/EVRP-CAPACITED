@@ -1,6 +1,7 @@
 package problems.ecvrp;
 
 import problems.Evaluator;
+import solutions.Block;
 import solutions.Solution;
 
 import java.io.*;
@@ -8,6 +9,8 @@ import java.util.*;
 
 import static java.lang.Math.max;
 import static java.lang.Math.sqrt;
+import static problems.ecvrp.Utils.DEPOT_NODE;
+import static problems.ecvrp.Utils.GOOD_BLOCK;
 
 
 public class ECVRP implements Evaluator<Integer> {
@@ -27,7 +30,7 @@ public class ECVRP implements Evaluator<Integer> {
     public List<List<Double>> dist;
 
 
-    public List<Integer> solution;
+    public List<Block> blocks;
 
 
     public ECVRP(String filename) throws IOException {
@@ -45,7 +48,7 @@ public class ECVRP implements Evaluator<Integer> {
         this.batteryChargeRate = 0.;
         this.size = 0;
         this.dist = new ArrayList<>();
-        this.solution = new ArrayList<>();
+        this.blocks = new ArrayList<>();
 
         readInput(filename);
         calculateEuclideanDistance();
@@ -145,21 +148,45 @@ public class ECVRP implements Evaluator<Integer> {
     }
 
     public Double evaluateECVRP() {
-        // TODO: implement
+        System.out.println("QUANTIDADE DE CARROS: " + blocks.size());
         Double sum = 0.;
-        for(int i = 0 ; i < this.solution.size() - 1; ++i){
-            sum += getDist(i,i+1);
+        for(int i = 0 ; i < blocks.size() ; ++i){
+            sum += evaluateBlock(blocks.get(i));
         }
         return sum;
     }
 
-    protected boolean isFeasible(){
-        // TODO: implement
-        return true;
-    }
+    protected Double evaluateBlock(Block block) {
 
-    protected void makeFeasible(){
-        // TODO: implement
+        Truck truck = new Truck(
+                this.batteryCapacity,
+                this.availableTime,
+                this.loadCapacity,
+                this.batteryChargeRate,
+                this.batteryConsumptionRate,
+                this.nodesCoordinates.get(DEPOT_NODE),
+                0.,
+                GOOD_BLOCK);
+
+        block.resetIndex();
+
+        while (block.hasNextClient()){
+            if (block.visitCSNow()) {
+                int csIdx = block.getCurrentCs().getChargingStation();
+                truck.goToNextChargingStation(this.batteryCapacity,this.nodesCoordinates.get(csIdx));
+                block.nextCS();
+                continue;
+            }
+            // go to the next client
+            int clientIndex = block.getCurrentClient();
+            truck.goToNextNode(this.nodesCoordinates.get(clientIndex), this.demands.get(clientIndex));
+            block.nextClient();
+        }
+        // go to depot
+        truck.goToNextNode(this.nodesCoordinates.get(DEPOT_NODE), this.demands.get(DEPOT_NODE));
+        block.setCost(truck.getCost());
+
+        return block.getCost();
     }
 
 
