@@ -1,7 +1,7 @@
 /**
  * 
  */
-package metaheuristics.tabusearch;
+package tabusearch;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;

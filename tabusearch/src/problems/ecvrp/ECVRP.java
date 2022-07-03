@@ -13,7 +13,7 @@ import static problems.ecvrp.Utils.DEPOT_NODE;
 import static problems.ecvrp.Utils.GOOD_BLOCK;
 
 
-public class ECVRP implements Evaluator<Integer> {
+public class ECVRP implements Evaluator<Block> {
     public Double batteryCapacity;
     public Double loadCapacity;
     public Double batteryConsumptionRate;
@@ -30,7 +30,7 @@ public class ECVRP implements Evaluator<Integer> {
     public List<List<Double>> dist;
 
 
-    public List<Block> blocks;
+    public Solution<Block> blocks;
 
 
     public ECVRP(String filename) throws IOException {
@@ -48,7 +48,7 @@ public class ECVRP implements Evaluator<Integer> {
         this.batteryChargeRate = 0.;
         this.size = 0;
         this.dist = new ArrayList<>();
-        this.blocks = new ArrayList<>();
+        this.blocks = new Solution<>();
 
         readInput(filename);
         calculateEuclideanDistance();
@@ -143,17 +143,32 @@ public class ECVRP implements Evaluator<Integer> {
     }
 
     @Override
-    public Double evaluate(Solution<Integer> sol) {
-        return sol.cost = evaluateECVRP();
-    }
-
-    public Double evaluateECVRP() {
+    public Double evaluate(Solution<Block> sol) {
         System.out.println("QUANTIDADE DE CARROS: " + blocks.size());
         Double sum = 0.;
         for(int i = 0 ; i < blocks.size() ; ++i){
             sum += evaluateBlock(blocks.get(i));
         }
+        blocks.cost = sum;
         return sum;
+    }
+
+    @Override
+    public Double evaluateInsertionCost(Block elem, Solution<Block> sol) {
+        // TODO: implement
+        return null;
+    }
+
+    @Override
+    public Double evaluateRemovalCost(Block elem, Solution<Block> sol) {
+        // TODO: implement
+        return null;
+    }
+
+    @Override
+    public Double evaluateExchangeCost(Block elemIn, Block elemOut, Solution<Block> sol) {
+        // TODO: implement
+        return null;
     }
 
     protected Double evaluateBlock(Block block) {
@@ -187,25 +202,6 @@ public class ECVRP implements Evaluator<Integer> {
         block.setCost(truck.getCost());
 
         return block.getCost();
-    }
-
-
-    @Override
-    public Double evaluateInsertionCost(Integer elem, Solution<Integer> sol) {
-        // TODO: implement
-        return 0.;
-    }
-
-    @Override
-    public Double evaluateRemovalCost(Integer elem, Solution<Integer> sol) {
-        // TODO: implement
-        return 0.;
-    }
-
-    @Override
-    public Double evaluateExchangeCost(Integer elemIn, Integer elemOut, Solution<Integer> sol) {
-        // TODO: implement
-        return 0.;
     }
 
 
