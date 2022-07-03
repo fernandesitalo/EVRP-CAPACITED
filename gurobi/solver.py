@@ -1,190 +1,137 @@
 from datetime import datetime
 import pandas as pd
 from math import ceil
-
+import networkx as nx
+import matplotlib.pyplot as plt
 import gurobipy as gp
 from gurobipy import *
 from collections import namedtuple
 import glob
 
-Instance = namedtuple(
-    'Instance',
-
-    'batteryCapacity '
-    'loadCapacity '
-    'batteryConsumptionRate '
-    'batteryChargeRate '
-    'velocity '
-    'availableTime '
-    'demands '
-    'servicesTimes '
-    'nodesCoordinates '
-    'clientsNodes '
-    'chargeStationsNodes '
-    'depotNode '
-)
+from gurobi.graph import Graph
+from gurobi.instance import Instance, read_instance
+from gurobi.solution import plot_solution
 
 
-def calc_edge_cost(u, v, instance):
-    x1, y1 = instance.nodesCoordinates[u][0], instance.nodesCoordinates[u][1]
-    x2, y2 = instance.nodesCoordinates[v][0], instance.nodesCoordinates[v][1]
-    return math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
-
-
-class Graph:
-    def __init__(self, instance):
-        self.timeEdges = None
-        self.costEdges = None
-        self.n = len(instance.nodesCoordinates)
-        self.create_adj_matrix(instance)
-        self.nodes = [i for i in range(self.n)]
-
-    def create_adj_matrix(self, instance):
-        self.costEdges = {(i, j): calc_edge_cost(i, j, instance) for i in range(self.n) for j in range(self.n)}
-        self.timeEdges = {(i, j): self.costEdges[i, j] / instance.velocity for i in range(self.n) for j in range(self.n)}
-
-
-def read_instance(file_dir):
-    sys.stdin = open(file_dir, "r")
-    _ = input().split()
-
-    coordinates = list()
-    demands = list()
-    servicesTimes = list()
-    chargeStationNodes = list()
-    clientNodes = list()
-    availableTime = 0
-    nodeIdx = 0
-    depotNode = 0
-
-    while True:
-        line = input().split()
-        if len(line) == 0:
-            break
-
-        nodeStringId, nodeType, x, y, demand, readyDate, dueDate, serviceTime = line
-
-        availableTime = max(availableTime, float(dueDate))
-        coordinates.append((float(x), float(y)))
-        demands.append(float(demand))
-        servicesTimes.append(float(serviceTime))
-
-        if nodeType == 'f':
-            chargeStationNodes.append(nodeIdx)
-        elif nodeType == 'c':
-            clientNodes.append(nodeIdx)
-
-        nodeIdx += 1
-
-    batteryCapacity: float = float(input().split('/')[1])
-    loadCapacity = float(input().split('/')[1])
-    batteryConsumptionRate = float(input().split('/')[1])
-    batteryChargeRate = float(input().split('/')[1])
-    velocity = float(input().split('/')[1])
-
-    return Instance(
-        batteryCapacity,
-        loadCapacity,
-        batteryConsumptionRate,
-        batteryChargeRate,
-        velocity,
-        availableTime,
-        demands,
-        servicesTimes,
-        coordinates,
-        clientNodes,
-        chargeStationNodes,
-        depotNode
-    )
-
-
-def create_model(instance, vehicles_number, timelimit):
-    graph = Graph(instance)
+def create_model(g, instance, vehicles_number, timelimit):
     lpModel = gp.Model()
-    lpModel.setParam('OutputFlag', 1)
+    lpModel.setParam('OutputFlag', 0)
     lpModel.setParam('TimeLimit', timelimit)
 
     # Create variables
-    isEdgeUsedVar = lpModel.addVars(graph.costEdges.keys(), vtype=GRB.BINARY, name='isEdgeUsedVar')
-    arriveCargoLoadVar = lpModel.addVars(graph.nodes, vtype=GRB.INTEGER, name='arriveCargoLoadVar')
-    arriveTimeVar = lpModel.addVars(graph.nodes, vtype=GRB.CONTINUOUS, name='arriveTimeVar')
-    arriveBatteryVar = lpModel.addVars(graph.nodes, vtype=GRB.CONTINUOUS, name='arriveBatteryVar')
+    isEdgeUsedVar = lpModel.addVars(g.w.keys(), vtype=GRB.BINARY, name='isEdgeUsedVar')
+    arriveCargoLoadVar = lpModel.addVars(g.nodes, vtype=GRB.INTEGER, name='arriveCargoLoadVar')
+    arriveTimeVar = lpModel.addVars(g.nodes, vtype=GRB.CONTINUOUS, name='arriveTimeVar')
+    arriveBatteryVar = lpModel.addVars(g.nodes, vtype=GRB.CONTINUOUS, name='arriveBatteryVar')
 
-    allNodes = graph.nodes
+    allNodesN = instance.chargeStationsNodes + instance.clientsNodes + [instance.depotNodeIn]
+    allNodes0 = instance.chargeStationsNodes + instance.clientsNodes + [instance.depotNodeOut]
 
     for i in instance.clientsNodes:
         lpModel.addConstr(  # client visit limit constraint
-            sum(isEdgeUsedVar[i, j] for j in allNodes) == 1
+            sum(isEdgeUsedVar[i, j] for j in allNodesN if i != j) == 1
         )
 
-    csAndDepotNodes = instance.chargeStationsNodes + [instance.depotNode]
-    for i in csAndDepotNodes:
+    for i in instance.chargeStationsNodes:
         lpModel.addConstr(  # Charge stations visit limit constraint
-            sum(isEdgeUsedVar[i, j] for j in allNodes) <= 1
+            sum(isEdgeUsedVar[i, j] for j in allNodesN if i != j) <= 1
         )
 
-    lpModel.addConstr(  # vehicles number constraint
-        sum(isEdgeUsedVar[instance.depotNode, j] for j in allNodes) <= vehicles_number
-    )
+    # lpModel.addConstr(  # vehicles number constraint
+    #     sum(isEdgeUsedVar[instance.depotNodeOut, j] for j in allNodes if i != j) <= vehicles_number
+    # )
 
-    for j in allNodes:
+    for j in instance.clientsNodes + instance.chargeStationsNodes:
         lpModel.addConstr(  # flow preservation constraint
-            sum(isEdgeUsedVar[j, i] for i in allNodes) - sum(isEdgeUsedVar[i, j] for i in allNodes) == 0
+            sum(isEdgeUsedVar[j, i] for i in allNodesN if i != j) - sum(isEdgeUsedVar[i, j] for i in allNodes0 if i != j) == 0
         )
 
     # Cargo Load constraints
-    for i in allNodes:
-        for j in allNodes:
+    for i in allNodes0:
+        for j in allNodesN:
+            if i == j:
+                continue
             lpModel.addConstr(0 <= arriveCargoLoadVar[j])
-            lpModel.addConstr(arriveCargoLoadVar[j] <= instance.demands[i] * graph.costEdges[i, j] * instance.loadCapacity * (1 - isEdgeUsedVar[i, j]))
+            lpModel.addConstr(
+                arriveCargoLoadVar[j]
+                <= arriveCargoLoadVar[i] - instance.demands[i] * isEdgeUsedVar[i, j] + instance.loadCapacity * (1 - isEdgeUsedVar[i, j])
+            )
 
     lpModel.addConstr(
-        0 <= arriveCargoLoadVar[instance.depotNode]
+        0 <= arriveCargoLoadVar[instance.depotNodeOut]
     )
     lpModel.addConstr(
-        arriveCargoLoadVar[instance.depotNode] <= instance.loadCapacity
+        arriveCargoLoadVar[instance.depotNodeOut] <= instance.loadCapacity
     )
 
     # Battery constraints
     for i in instance.clientsNodes:
-        for j in allNodes:
+        for j in allNodesN:
+            if i == j:
+                continue
             lpModel.addConstr(
-                arriveBatteryVar[j] <= arriveBatteryVar[i] - instance.batteryConsumptionRate * graph.costEdges[i, j] * isEdgeUsedVar[i, j] + instance.batteryCapacity * (1 - isEdgeUsedVar[i, j])
+                0 <= arriveBatteryVar[j]
+            )
+            lpModel.addConstr(
+                arriveBatteryVar[j]
+                <= arriveBatteryVar[i]
+                - instance.batteryConsumptionRate * g.w[i, j] * isEdgeUsedVar[i, j]
+                + instance.batteryCapacity * (1 - isEdgeUsedVar[i, j])
             )
 
-    for i in instance.chargeStationsNodes:
-        for j in allNodes:
+    for i in instance.chargeStationsNodes + [instance.depotNodeOut]:
+        for j in allNodesN:
+            if i == j:
+                continue
             lpModel.addConstr(
-                arriveBatteryVar[j] <= instance.batteryCapacity - instance.batteryConsumptionRate * graph.costEdges[i, j] * isEdgeUsedVar[i, j]
+                0 <= arriveBatteryVar[j]
+            )
+            lpModel.addConstr(
+                arriveBatteryVar[j]
+                <= instance.batteryCapacity - instance.batteryConsumptionRate * g.w[i, j] * isEdgeUsedVar[i, j]
             )
 
     # time constraints
-    for i in allNodes:
-        for j in allNodes:
-            if j != instance.depotNode:
-                lpModel.addConstr(
-                    arriveTimeVar[i] + instance.servicesTimes[i] + graph.timeEdges[i, j] - instance.availableTime * (1 - isEdgeUsedVar[i, j]) <= arriveTimeVar[j]
-                )
+    for i in instance.clientsNodes + [instance.depotNodeOut]:
+        for j in allNodesN:
+            if i == j:
+                continue
+            lpModel.addConstr (
+                arriveTimeVar[i] + (instance.servicesTimes[i] + g.t[i, j])
+                * isEdgeUsedVar[i, j] - instance.availableTime * (1 - isEdgeUsedVar[i, j])
+                <= arriveTimeVar[j]
+            )
 
-    for j in allNodes:
-        if j == instance.depotNode:
-            continue
+    for i in instance.chargeStationsNodes:
+        for j in allNodesN:
+            if i == j:
+                continue
+            lpModel.addConstr(
+                arriveTimeVar[i]
+                + g.t[i, j] * isEdgeUsedVar[i, j]
+                + instance.batteryChargeRate * (instance.batteryCapacity - arriveBatteryVar[i])
+                - (instance.availableTime + instance.batteryCapacity * instance.batteryChargeRate) * (1 - isEdgeUsedVar[i, j])
+                <= arriveTimeVar[j]
+            )
+
+    for j in allNodes0 + [instance.depotNodeIn]:
         lpModel.addConstr(
-            instance.servicesTimes[instance.depotNode] + graph.timeEdges[instance.depotNode, j] <= arriveTimeVar[j]
+            arriveTimeVar[j] <= instance.availableTime
         )
 
         lpModel.addConstr(
-            arriveTimeVar[j] <= instance.availableTime - instance.servicesTimes[instance.depotNode] + graph.timeEdges[j, instance.depotNode]
+            0 <= arriveTimeVar[j]
         )
 
-    # vars limit constraints
 
     # Objective function
     lpModel.setObjective(
-        sum(isEdgeUsedVar[i, j] * graph.costEdges[i, j] for i in allNodes for j in allNodes)
+        sum(isEdgeUsedVar[i, j] * g.w[i, j] for i in allNodes0 for j in allNodesN if i != j)
     )
     lpModel.ModelSense = GRB.MINIMIZE
     lpModel._isEdgeUsedVar = isEdgeUsedVar
+    lpModel._arriveBatteryVar = arriveBatteryVar
+    lpModel._arriveTimeVar = arriveTimeVar
 
     return lpModel
 
@@ -200,7 +147,7 @@ def run_model(model, instance, time):
     n = len(instance.nodesCoordinates)
 
     usedEdges = model.getAttr('X', model._isEdgeUsedVar)
-    usedEVs = sum([1 for i in range(n) if usedEdges[instance.depotNode, i] > 0.5])
+    usedEVs = sum([1 for i in range(n) if usedEdges[instance.depotNodeOut, i] > 0.5])
     solCost = model.ObjVal
     totalTime = (datetime.now() - start).total_seconds()
 
@@ -225,14 +172,19 @@ if __name__ == "__main__":
         f=[]
     )
 
-    for d in get_instances_dir():
-    # for d in ["instances/r106_21.txt"]:
+    # for d in get_instances_dir():
+    for d in ["instances/rc108C5.txt"]:
+    # for d in ["instances/c101C5.txt"]:
         instance: Instance = read_instance(d)
-        fs = ceil(len(instance.clientsNodes)/2.0)
+        graph = Graph(instance)
 
-        timelimit = 60 * 10
-        model = create_model(instance, fs, timelimit)
+        fs = ceil(len(instance.clientsNodes) / 2.0)
+
+        timelimit = 60 * 60 * 5
+        model = create_model(graph, instance, fs, timelimit)
         solCost, usedEvs, totalTime = run_model(model, instance, timelimit)
+
+        plot_solution(instance, graph, model, usedEvs)
 
         solutions['instance'].append(d)
         solutions['batteryCapacity'].append(instance.batteryCapacity)
