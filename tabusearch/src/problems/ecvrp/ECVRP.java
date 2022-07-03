@@ -16,18 +16,19 @@ public class ECVRP implements Evaluator<Integer> {
     public Double batteryConsumptionRate;
     public Double batteryChargeRate;
     public Double velocity;
+
     public List<Double> demands;
     public List<Coordinates> nodesCoordinates;
     public Double availableTime;
     public List<Double> servicesTimes;
     public List<Integer> clientsNodes;
     public List<Integer> chargeStationsNodes;
-    public Integer depotNode;
+    public final Integer DEPOT_NODE = 0;
     public Integer size;
     public List<List<Double>> dist;
-
-
     public List<Integer> solution;
+
+    public List<Integer> closestChargingStation;
 
 
     public ECVRP(String filename) throws IOException {
@@ -37,7 +38,6 @@ public class ECVRP implements Evaluator<Integer> {
         this.servicesTimes = new ArrayList<>();
         this.clientsNodes = new ArrayList<>();
         this.chargeStationsNodes = new ArrayList<>();
-        this.depotNode = 0;
         this.velocity = 0.;
         this.batteryCapacity = 0.;
         this.loadCapacity = 0.;
@@ -46,7 +46,7 @@ public class ECVRP implements Evaluator<Integer> {
         this.size = 0;
         this.dist = new ArrayList<>();
         this.solution = new ArrayList<>();
-
+        this.closestChargingStation = new ArrayList<>();
         readInput(filename);
         calculateEuclideanDistance();
     }
@@ -119,6 +119,7 @@ public class ECVRP implements Evaluator<Integer> {
     }
 
     protected void calculateEuclideanDistance(){
+        this.dist.clear();
         for(int i = 0; i < this.size; ++i) {
             this.dist.add(new ArrayList<>());
             for(int j = 0; j < this.size; ++j) {
@@ -127,6 +128,24 @@ public class ECVRP implements Evaluator<Integer> {
                 Double calcDist = sqrt(deltaX*deltaX + deltaY*deltaY);
                 dist.get(i).add(calcDist);
             }
+        }
+    }
+
+    protected void calculateClosesChargingStation() {
+        // I will calculate for every nodes..
+        this.closestChargingStation.clear();
+        for (int i = 0 ; i < nodesCoordinates.size() ; ++i) {
+            Double minDist = Double.MAX_VALUE;
+            int closestNode = 0;
+            for(int j = 0; j < this.chargeStationsNodes.size() ; ++j){
+                int cs = this.chargeStationsNodes.get(j);
+
+                if (minDist > getDist(i, cs)) {
+                    closestNode = cs;
+                    minDist = getDist(i, cs);
+                }
+            }
+            this.closestChargingStation.add(closestNode);
         }
     }
 
@@ -145,21 +164,83 @@ public class ECVRP implements Evaluator<Integer> {
     }
 
     public Double evaluateECVRP() {
-        // TODO: implement
-        Double sum = 0.;
-        for(int i = 0 ; i < this.solution.size() - 1; ++i){
-            sum += getDist(i,i+1);
+        // give list with a specific order of costumer, we need calculate the cost
+
+        int carAmount = 1;
+
+        Double currentBattery = this.batteryCapacity;
+        Double currentCapacity = this.loadCapacity;
+        Double currentTime = 0.;
+
+        int currentIdx = 0; // idx in solution [2,1,3,4,5,...]
+        int nextClient = solution.get(currentIdx);
+        int currentNode = DEPOT_NODE;
+        // the DEPOT must be the last client at solution
+        while(currentIdx < solution.size()) {
+
+    // possibilities at any moment
+    // 1 - Go to the another client (I need have battery to back to depot or another CS AND need capacity AND has time to arrive at next client and back to depot)
+    // 2 - Go to the charging station (if I have products for the next client AND I don't have battery to arrive AND has time to arrive at next client and back to depot)
+    // 3 - Back to the depot (if I don't have products for the next client AND I have battery to go to the depot AND has time)
+    // 4 - get a new car (if I'm at depot and I don't have time to go to the next client and back to the depot)
+
+            // possibility 4 - get a new car
+            boolean hasTimeToNextClientAndBackToTheDepot_ = hasTimeToNextClientAndBackToTheDepot(currentTime, currentNode, nextClient);
+            if(currentNode == DEPOT_NODE && !hasTimeToNextClientAndBackToTheDepot_) {
+                // new car!!
+                currentBattery = this.batteryCapacity;
+                currentCapacity = this.loadCapacity;
+                currentTime = 0.;
+                carAmount++;
+                continue;
+            }
+
+            // possibility 1 - Go to the another client
+            boolean hasBatteryToNextClientAndBackToTheDepot_ = hasBatteryToNextClientAndBackToTheDepot(currentNode, nextClient);
+            boolean hasBatteryToNextClientAndAnotherCS_ = hasBatteryToNextClientAndAnotherCS(currentNode, nextClient);
+            boolean hasCapacityToNextClient_ = hasCapacityToNextClient(currentCapacity, nextClient);
+            boolean hasTimeToGoToClientAnotherCSAndDepot_ = hasTimeToGoToClientAnotherCSAndDepot(currentTime, nextClient);
+            if (hasCapacityToNextClient_
+                    && (hasTimeToNextClientAndBackToTheDepot_ || hasTimeToGoToClientAnotherCSAndDepot_)
+                    && (hasBatteryToNextClientAndAnotherCS_ || hasBatteryToNextClientAndBackToTheDepot_)) {
+                // update car
+                currentBattery -= calculateBatterySpent(currentNode, nextClient);
+                currentCapacity -= calculateCapacitySpent(nextClient);
+                currentTime += calculateTravelTimeSpent(currentNode, nextClient);
+
+                // update next client
+                currentIdx++;
+                nextClient = solution.get(currentIdx);
+                continue;
+            }
+
+            // possibility 2 - Go to the charging station
+            boolean hasBatteryForNextClient_ = hasBatteryForNextClient(currentNode, nextClient);
+            boolean hasTimeToNextCSAndBackToDepot_ = hasTimeToNextCSAndBackToDepot(currentTime, currentNode); // lembrar de incluir tempo de recarga nessa funcao
+            if (hasTimeToNextCSAndBackToDepot_
+                    && hasCapacityToNextClient_
+                    && !hasBatteryForNextClient_) {
+                // update car
+                currentBattery -= calculateBatterySpent(currentNode, nextClient);
+                currentTime += calculateChargingTimeSpent(currentBattery);
+                currentBattery = this.batteryCapacity;
+                currentTime += calculateTravelTimeSpent(currentNode, nextClient);
+                continue;
+            }
+
+            // possibility 3 - Back to the depot
+            boolean hasTimeToBackToTheDepot_ = hasTimeToBackToTheDepot(currentTime, currentNode);
+            assert (hasTimeToBackToTheDepot_ == true): "This shit is wrong! Check condition time again...";
+            if(!hasCapacityToNextClient_) {
+                // dfs mesmo, no fodac
+                obj a = calculateTheBackToTheDepotInMiniMumTime(currentNode, currentTime, DEPOT_NODE);
+                currentBattery -= a.battery();
+                currentTime += a.time(currentNode, DEPOT_NODE);
+                continue;
+            }
         }
-        return sum;
-    }
 
-    protected boolean isFeasible(){
-        // TODO: implement
-        return true;
-    }
-
-    protected void makeFeasible(){
-        // TODO: implement
+        return 0.;
     }
 
 

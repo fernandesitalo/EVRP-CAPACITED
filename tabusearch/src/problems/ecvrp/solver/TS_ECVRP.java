@@ -2,7 +2,6 @@ package problems.ecvrp.solver;
 
 import metaheuristics.tabusearch.AbstractTS;
 import problems.ecvrp.ECVRP;
-import problems.qbf.QBF;
 import solutions.Solution;
 
 import java.io.IOException;
@@ -13,27 +12,10 @@ public class TS_ECVRP extends AbstractTS<Integer> {
 
 	private final Integer fake = -1;
 
-	/**
-	 * Constructor for the TS_ECVRP class. An inverse ECVRP objective function is
-	 * passed as argument for the superclass constructor.
-	 *
-	 * @param tenure
-	 *            The Tabu tenure parameter.
-	 * @param iterations
-	 *            The number of iterations which the TS will be executed.
-	 * @param filename
-	 *            Name of the file for which the objective function parameters
-	 *            should be read.
-	 * @throws IOException
-	 *             necessary for I/O operations.
-	 */
 	public TS_ECVRP(Integer tenure, Integer iterations, String filename) throws IOException {
-		super(new QBF(filename), tenure, iterations);
+		super(new ECVRP(filename), tenure, iterations);
 	}
 
-	/* (non-Javadoc)
-	 * @see metaheuristics.tabusearch.AbstractTS#makeCL()
-	 */
 	@Override
 	public ArrayList<Integer> makeCL() {
 
@@ -47,9 +29,6 @@ public class TS_ECVRP extends AbstractTS<Integer> {
 
 	}
 
-	/* (non-Javadoc)
-	 * @see metaheuristics.tabusearch.AbstractTS#makeRCL()
-	 */
 	@Override
 	public ArrayList<Integer> makeRCL() {
 
@@ -58,10 +37,7 @@ public class TS_ECVRP extends AbstractTS<Integer> {
 		return _RCL;
 
 	}
-	
-	/* (non-Javadoc)
-	 * @see metaheuristics.tabusearch.AbstractTS#makeTL()
-	 */
+
 	@Override
 	public ArrayDeque<Integer> makeTL() {
 
@@ -74,23 +50,11 @@ public class TS_ECVRP extends AbstractTS<Integer> {
 
 	}
 
-	/* (non-Javadoc)
-	 * @see metaheuristics.tabusearch.AbstractTS#updateCL()
-	 */
 	@Override
 	public void updateCL() {
-
 		// do nothing
-
 	}
 
-	/**
-	 * {@inheritDoc}
-	 * 
-	 * This createEmptySol instantiates an empty solution and it attributes a
-	 * zero cost, since it is known that a ECVRP solution with all variables set
-	 * to zero has also zero cost.
-	 */
 	@Override
 	public Solution<Integer> createEmptySol() {
 		Solution<Integer> sol = new Solution<Integer>();
@@ -98,12 +62,6 @@ public class TS_ECVRP extends AbstractTS<Integer> {
 		return sol;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 * 
-	 * The local search operator developed for the ECVRP objective function is
-	 * composed by the neighborhood moves Insertion, Removal and 2-Exchange.
-	 */
 	@Override
 	public Solution<Integer> neighborhoodMove() {
 
@@ -169,10 +127,6 @@ public class TS_ECVRP extends AbstractTS<Integer> {
 		return null;
 	}
 
-	/**
-	 * A main method used for testing the TS metaheuristic.
-	 * 
-	 */
 	public static void main(String[] args) throws IOException {
 
 		long startTime = System.currentTimeMillis();
@@ -185,7 +139,6 @@ public class TS_ECVRP extends AbstractTS<Integer> {
 		long endTime   = System.currentTimeMillis();
 		long totalTime = endTime - startTime;
 		System.out.println("Time = "+(double)totalTime/(double)1000+" seg");
-
 	}
 
 }
