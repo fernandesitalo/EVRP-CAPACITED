@@ -19,12 +19,14 @@ public interface Evaluator<E> {
 
 	public abstract List<Integer> getChargingStations();
 
-	public abstract Integer getNumberBlocks();
+	public abstract Integer getNumberRoutes();
 
 	public abstract Integer getNumberClients();
 
 	public abstract Integer getNumberChargingStations();
 
 	public abstract Double evaluate(Solution<E> sol);
+
+	public abstract Double evaluateRoute(E e);
 
 }

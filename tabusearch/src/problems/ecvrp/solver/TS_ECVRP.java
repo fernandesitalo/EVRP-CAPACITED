@@ -52,8 +52,8 @@ public class TS_ECVRP extends AbstractTS<Route> {
 	}
 
 	protected void moveRandom2OptChargingStations() {
-		int posRoute1 = Utils.getRandomNumber(0, ObjFunction.getNumberBlocks() - 1);
-		int posRoute2 = Utils.getRandomNumber(0, ObjFunction.getNumberBlocks() - 1);
+		int posRoute1 = Utils.getRandomNumber(0, ObjFunction.getNumberRoutes() - 1);
+		int posRoute2 = Utils.getRandomNumber(0, ObjFunction.getNumberRoutes() - 1);
 
 		Route route1 = this.sol.get(posRoute1);
 		Route route2 = this.sol.get(posRoute2);
@@ -73,13 +73,18 @@ public class TS_ECVRP extends AbstractTS<Route> {
 
 			this.sol.set(posRoute1, route1);
 			this.sol.set(posRoute2, route2);
+
+			Double oldCost = route1.cost + route2.cost;
+			route1.cost = ObjFunction.evaluateRoute(route1);
+			route2.cost = ObjFunction.evaluateRoute(route2);
+			Double newCost = route1.cost + route2.cost;
+			this.cost += newCost - oldCost;
 		}
 	}
 
-
 	protected void moveRandom2OptClients(){
-		int posRoute1 = Utils.getRandomNumber(0, ObjFunction.getNumberBlocks() - 1);
-		int posRoute2 = Utils.getRandomNumber(0, ObjFunction.getNumberBlocks() - 1);
+		int posRoute1 = Utils.getRandomNumber(0, ObjFunction.getNumberRoutes() - 1);
+		int posRoute2 = Utils.getRandomNumber(0, ObjFunction.getNumberRoutes() - 1);
 
 		Route route1 = this.sol.get(posRoute1);
 		Route route2 = this.sol.get(posRoute2);
@@ -99,6 +104,12 @@ public class TS_ECVRP extends AbstractTS<Route> {
 
 			this.sol.set(posRoute1, route1);
 			this.sol.set(posRoute2, route2);
+
+			Double oldCost = route1.cost + route2.cost;
+			route1.cost = ObjFunction.evaluateRoute(route1);
+			route2.cost = ObjFunction.evaluateRoute(route2);
+			Double newCost = route1.cost + route2.cost;
+			this.cost += newCost - oldCost;
 		}
 	}
 

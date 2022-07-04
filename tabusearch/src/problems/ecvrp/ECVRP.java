@@ -132,7 +132,7 @@ public class ECVRP implements Evaluator<Route> {
     }
 
     @Override
-    public Integer getNumberBlocks() {
+    public Integer getNumberRoutes() {
         return parameterM;
     }
 
@@ -157,8 +157,8 @@ public class ECVRP implements Evaluator<Route> {
         return sum;
     }
 
-
-    protected Double evaluateRoute(Route route) {
+    @Override
+    public Double evaluateRoute(Route route) {
 
         Truck truck = new Truck(
                 this.batteryCapacity,
