@@ -21,6 +21,10 @@ public interface Evaluator<E> {
 
 	public abstract Integer getNumberBlocks();
 
+	public abstract Integer getNumberClients();
+
+	public abstract Integer getNumberChargingStations();
+
 	public abstract Double evaluate(Solution<E> sol);
 
 }

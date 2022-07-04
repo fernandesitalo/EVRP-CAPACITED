@@ -1,8 +1,9 @@
 package problems.ecvrp.solver;
 
 import problems.ecvrp.ECVRP;
-import solutions.Route;
+import problems.ecvrp.Utils;
 import solutions.MyPair;
+import solutions.Route;
 import solutions.Solution;
 import tabusearch.AbstractTS;
 
@@ -45,7 +46,60 @@ public class TS_ECVRP extends AbstractTS<Route> {
 
 	@Override
 	public Solution<Route> neighborhoodMove() {
+		moveRandom2OptClients();
+		moveRandom2OptChargingStations();
 		return null;
+	}
+
+	protected void moveRandom2OptChargingStations() {
+		int posRoute1 = Utils.getRandomNumber(0, ObjFunction.getNumberBlocks() - 1);
+		int posRoute2 = Utils.getRandomNumber(0, ObjFunction.getNumberBlocks() - 1);
+
+		Route route1 = this.sol.get(posRoute1);
+		Route route2 = this.sol.get(posRoute2);
+
+		if(route1.getChargingStations().size() > 0 && route2.getChargingStations().size() > 0) {
+			int sizeCS = route1.getChargingStations().size();
+			int posCS1 = Utils.getRandomNumber(0, sizeCS - 1);
+
+			sizeCS = route2.getChargingStations().size();
+			int posCS2 = Utils.getRandomNumber(0, sizeCS - 1);
+
+			MyPair cs1 = route1.getChargingStations().get(posCS1);
+			MyPair cs2 = route1.getChargingStations().get(posCS2);
+
+			route1.getChargingStations().set(posCS1, cs2);
+			route2.getChargingStations().set(posCS2, cs1);
+
+			this.sol.set(posRoute1, route1);
+			this.sol.set(posRoute2, route2);
+		}
+	}
+
+
+	protected void moveRandom2OptClients(){
+		int posRoute1 = Utils.getRandomNumber(0, ObjFunction.getNumberBlocks() - 1);
+		int posRoute2 = Utils.getRandomNumber(0, ObjFunction.getNumberBlocks() - 1);
+
+		Route route1 = this.sol.get(posRoute1);
+		Route route2 = this.sol.get(posRoute2);
+
+		if(route1.getClients().size() > 0 && route2.getClients().size() > 0) {
+			int sizeClients = route1.getClients().size();
+			int posClient1 = Utils.getRandomNumber(0, sizeClients - 1);
+
+			sizeClients = route2.getClients().size();
+			int posClient2 = Utils.getRandomNumber(0, sizeClients - 1);
+
+			int client1 = route1.getClients().get(posClient1);
+			int client2 = route1.getClients().get(posClient2);
+
+			route1.getClients().set(posClient1, client2);
+			route2.getClients().set(posClient2, client1);
+
+			this.sol.set(posRoute1, route1);
+			this.sol.set(posRoute2, route2);
+		}
 	}
 
 	

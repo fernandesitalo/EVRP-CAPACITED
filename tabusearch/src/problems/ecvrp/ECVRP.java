@@ -27,6 +27,8 @@ public class ECVRP implements Evaluator<Route> {
     public Integer depotNode;
     public List<List<Double>> dist;
 
+    public Integer parameterM = 10;
+
 
     public Solution<Route> routes;
 
@@ -131,7 +133,17 @@ public class ECVRP implements Evaluator<Route> {
 
     @Override
     public Integer getNumberBlocks() {
-        return 5;
+        return parameterM;
+    }
+
+    @Override
+    public Integer getNumberClients() {
+        return this.clientsNodes.size();
+    }
+
+    @Override
+    public Integer getNumberChargingStations() {
+        return this.chargeStationsNodes.size();
     }
 
     @Override

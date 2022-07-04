@@ -10,6 +10,10 @@ public class Utils {
 
     public static final Integer DEPOT_NODE = 0;
 
+    public static Integer getRandomNumber(int min, int max) {
+        return (int) ((Math.random() * (max - min)) + min);
+    }
+
     public static Double calcDist(Coordinates nodeA, Coordinates nodeB) {
         double deltaX = nodeA.getX() - nodeB.getX();
         double deltaY = nodeA.getY() - nodeB.getY();
