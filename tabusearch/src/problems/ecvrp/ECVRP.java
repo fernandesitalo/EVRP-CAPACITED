@@ -25,13 +25,8 @@ public class ECVRP implements Evaluator<Route> {
     public List<Integer> clientsNodes;
     public List<Integer> chargeStationsNodes;
     public Integer depotNode;
-    public List<List<Double>> dist;
-
     public Integer parameterM = 10;
-
-
     public Solution<Route> routes;
-
 
     public ECVRP(String filename) throws IOException {
         this.demands = new ArrayList<>();
@@ -46,7 +41,6 @@ public class ECVRP implements Evaluator<Route> {
         this.loadCapacity = 0.;
         this.batteryConsumptionRate = 0.;
         this.batteryChargeRate = 0.;
-        this.dist = new ArrayList<>();
         this.routes = new Solution<>();
 
         readInput(filename);
@@ -117,10 +111,6 @@ public class ECVRP implements Evaluator<Route> {
         velocity = stok.nval;
     }
 
-    protected Double getDist(int a, int b){
-        return this.dist.get(a).get(b);
-    }
-
     @Override
     public List<Integer> getClients() {
         return this.clientsNodes;
@@ -173,23 +163,20 @@ public class ECVRP implements Evaluator<Route> {
 
         route.resetIndex();
 
-        // talvez tenha que ordenar o vetor de charging station pelo indice
         route.getChargingStations().sort((cs1, cs2) -> {
-            //Compares its two arguments for order.
-            // Returns a negative integer, zero, or a positive integer
-            // as the first argument is less than, equal to, or greater than the second.
             if (cs1.getIndex() > cs2.getIndex()) return 1;
             if (cs1.getIndex() < cs2.getIndex()) return -1;
             return 0;
         });
 
-        while (route.hasNextClient()){
+        while (route.hasNextClient() || route.hasNextCS()){
             if (route.visitCSNow()) {
                 int csIdx = route.getCurrentCs().getChargingStation();
                 truck.goToNextChargingStation(this.batteryCapacity,this.nodesCoordinates.get(csIdx), this.servicesTimes.get(csIdx));
                 route.nextCS();
                 continue;
             }
+            if (!route.hasNextClient()) continue;
             // go to the next client
             int clientIndex = route.getCurrentClient();
             truck.goToNextNode(this.nodesCoordinates.get(clientIndex), this.demands.get(clientIndex));
@@ -208,5 +195,4 @@ public class ECVRP implements Evaluator<Route> {
         ECVRP ecvrp = new ECVRP("instances/c101_21.txt");
         // TODO: create a random solution for test and evaluate
     }
-
 }
