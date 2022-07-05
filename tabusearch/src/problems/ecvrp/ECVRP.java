@@ -186,7 +186,7 @@ public class ECVRP implements Evaluator<Route> {
         while (route.hasNextClient()){
             if (route.visitCSNow()) {
                 int csIdx = route.getCurrentCs().getChargingStation();
-                truck.goToNextChargingStation(this.batteryCapacity,this.nodesCoordinates.get(csIdx));
+                truck.goToNextChargingStation(this.batteryCapacity,this.nodesCoordinates.get(csIdx), this.servicesTimes.get(csIdx));
                 route.nextCS();
                 continue;
             }

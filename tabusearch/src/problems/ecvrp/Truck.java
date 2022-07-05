@@ -23,7 +23,7 @@ public class Truck {
     Double cost;
     Integer status;
 
-    public void goToNextChargingStation(Double batteryCapacity, Coordinates coordinates) {
+    public void goToNextChargingStation(Double batteryCapacity, Coordinates coordinates, Double servicesTime) {
         // estou em <this.coord> e vou para <coordinates>
         Double dist = Utils.calcDist(this.coord, coordinates);
 
@@ -53,6 +53,8 @@ public class Truck {
         Double timeToCharge = batteryToCharge * this.batteryChargeRate;
 
         this.time -= timeToCharge;
+
+        this.time -= servicesTime;
 
         if (0 > this.time) {
             // apply penalty for this move
