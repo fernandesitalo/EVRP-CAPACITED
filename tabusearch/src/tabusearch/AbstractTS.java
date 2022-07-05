@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Random;
 
 import problems.Evaluator;
+import problems.ecvrp.Movement;
 import solutions.Solution;
 
 /**
@@ -69,7 +70,7 @@ public abstract class AbstractTS<E> {
 	/**
 	 * the Tabu List of elements to enter the solution.
 	 */
-	protected ArrayDeque<E> TL;
+	protected ArrayDeque<Movement> TL;
 	
 	/**
 	 * Creates the Tabu List, which is an ArrayDeque of the Tabu
@@ -78,7 +79,7 @@ public abstract class AbstractTS<E> {
 	 * 
 	 * @return The Tabu List.
 	 */
-	public abstract ArrayDeque<E> makeTL();
+	public abstract ArrayDeque<Movement> makeTL();
 
 	/**
 	 * Creates a new solution which is empty, i.e., does not contain any

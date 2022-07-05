@@ -4,9 +4,15 @@ public class Utils {
     public static final Integer BAD_BLOCK = -1;
     public static final Integer GOOD_BLOCK = -2;
 
+    public static final Integer MOVE_CLIENT_NEIGHBORHOOD = -1;
+    public static final Integer MOVE_INSERT_CS = -2;
+    public static final Integer MOVE_REMOVE_CS = -3;
+
+
     public static final Double PENALTY_CAPACITY = 1000.0;
     public static final Double PENALTY_TIME = 1000.0;
     public static final Double PENALTY_BATTERY = 1000.0;
+
 
     public static final Integer DEPOT_NODE = 0;
 
@@ -20,3 +26,5 @@ public class Utils {
         return Math.sqrt(deltaY*deltaY + deltaX*deltaX);
     }
 }
+
+
