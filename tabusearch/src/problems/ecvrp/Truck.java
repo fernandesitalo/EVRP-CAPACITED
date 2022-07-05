@@ -13,13 +13,10 @@ public class Truck {
     Double battery;
     Double time;
     Double capacity;
-
     Double batteryChargeRate;
     Double batteryConsumptionRate;
     Double velocity;
-
     Coordinates coord;
-
     Double cost;
     Integer status;
 
@@ -56,12 +53,12 @@ public class Truck {
             this.status = BAD_BLOCK;
         }
 
-        // update cost!!!!!!!!!!!!!!!!!!!1
+        // update cost!!!!!!!!!!!!!!!!!!!
         this.cost += dist;
     }
 
 
-    public void goToNextNode(Coordinates coordinates, Double demand) {
+    public void goToNextNode(Coordinates coordinates, Double demand, Double serviceTime) {
         // estou em <this.coord> e vou para <coordinates>
         Double dist = Utils.calcDist(this.coord, coordinates);
 
@@ -78,6 +75,7 @@ public class Truck {
         // handling with time ------------------------------------------------------
         Double travelTime = dist / this.velocity;
         this.time -= travelTime;
+        this.time -= serviceTime;
         if (0 > this.time) {
             // apply penalty for this move
             this.cost += PENALTY_TIME;

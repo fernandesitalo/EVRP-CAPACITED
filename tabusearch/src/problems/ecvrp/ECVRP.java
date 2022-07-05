@@ -179,11 +179,11 @@ public class ECVRP implements Evaluator<Route> {
             if (!route.hasNextClient()) continue;
             // go to the next client
             int clientIndex = route.getCurrentClient();
-            truck.goToNextNode(this.nodesCoordinates.get(clientIndex), this.demands.get(clientIndex));
+            truck.goToNextNode(this.nodesCoordinates.get(clientIndex), this.demands.get(clientIndex), this.servicesTimes.get(clientIndex));
             route.nextClient();
         }
         // go to depot
-        truck.goToNextNode(this.nodesCoordinates.get(DEPOT_NODE), this.demands.get(DEPOT_NODE));
+        truck.goToNextNode(this.nodesCoordinates.get(DEPOT_NODE), this.demands.get(DEPOT_NODE), this.servicesTimes.get(DEPOT_NODE));
         route.setCost(truck.getCost());
 
         return route.getCost();

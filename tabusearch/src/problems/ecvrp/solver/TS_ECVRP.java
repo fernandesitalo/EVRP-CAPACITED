@@ -169,6 +169,5 @@ public class TS_ECVRP extends AbstractTS<Route> {
         long endTime = System.currentTimeMillis();
         long totalTime = endTime - startTime;
         System.out.println("Time = " + (double) totalTime / (double) 1000 + " seg");
-
     }
 }
