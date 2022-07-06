@@ -7,7 +7,7 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 @NoArgsConstructor
-public class MyPair {
+public class RechargePoint {
     public Integer chargingStation;
     public Integer index;
 }

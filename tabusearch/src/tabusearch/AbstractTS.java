@@ -4,7 +4,6 @@
 package tabusearch;
 
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Random;
 
 import problems.Evaluator;
@@ -66,7 +65,7 @@ public abstract class AbstractTS<E> {
 	 */
 	protected Integer tenure;
 
-	
+
 	/**
 	 * the Tabu List of elements to enter the solution.
 	 */
@@ -117,9 +116,7 @@ public abstract class AbstractTS<E> {
 		this.iterations = iterations;
 	}
 
-	public Solution<E> initialSolution() {
-		return sol;
-	}
+	public abstract void createInitialSolution();
 
 	/**
 	 * The TS mainframe. It consists of a constructive heuristic followed by
@@ -131,7 +128,7 @@ public abstract class AbstractTS<E> {
 	public Solution<E> solve() {
 
 		bestSol = createEmptySol();
-		initialSolution();
+		createInitialSolution();
 		TL = makeTL();
 		for (int i = 0; i < iterations; i++) {
 			neighborhoodMove();
@@ -153,6 +150,6 @@ public abstract class AbstractTS<E> {
 	 * @return true if the criteria is met.
 	 */
 	public Boolean constructiveStopCriteria() {
-		return (cost > sol.cost) ? false : true;
+		return cost <= sol.cost	;
 	}
 }

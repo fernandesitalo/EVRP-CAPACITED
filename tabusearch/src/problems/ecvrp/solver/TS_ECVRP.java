@@ -4,7 +4,7 @@ import problems.ecvrp.ECVRP;
 import problems.ecvrp.Movement;
 import problems.ecvrp.Pair;
 import problems.ecvrp.Utils;
-import solutions.MyPair;
+import solutions.RechargePoint;
 import solutions.Route;
 import solutions.Solution;
 import tabusearch.AbstractTS;
@@ -15,8 +15,11 @@ import java.util.stream.Collectors;
 
 public class TS_ECVRP extends AbstractTS<Route> {
 
-    public TS_ECVRP(Integer tenure, Integer iterations, String filename) throws IOException {
+    int fleetSize;
+
+    public TS_ECVRP(Integer tenure, Integer iterations, String filename, int fleetSize) throws IOException {
         super(new ECVRP(filename), tenure, iterations);
+        this.fleetSize = fleetSize;
     }
 
     @Override
@@ -32,28 +35,50 @@ public class TS_ECVRP extends AbstractTS<Route> {
         return sol;
     }
 
+    @Override
+    public void createInitialSolution() {
+        Solution<Route> sol = new Solution<Route>();
+        sol.cost = Double.MAX_VALUE;
+
+        for (int i = 0; i < this.fleetSize; i++) {
+            sol.add(new Route(new ArrayList<>(), new ArrayList<>(),0,0,0.0));
+        }
+
+        this.sol =  sol;
+    }
+
 
     @Override
     public Solution<Route> neighborhoodMove() {
-        List<Pair> listPair = new ArrayList<>();
+        List<Pair> possibleMoves = new ArrayList<>();
 
         for (int i = 0; i < 20; ++i) {
-            Pair c = moveRandom2OptClients();
-            Pair a = insertAChargingStationInRandomRoute();
-            Pair b = removeChargingStationInRandomRoute();
-            Pair d = removeClientAndInsertInAnotherRoute();
-            listPair.add(c);
-            listPair.add(a);
-            listPair.add(b);
+            Pair moveA = insertAChargingStationInRandomRoute();
+            Pair moveB = removeChargingStationInRandomRoute();
+            Pair moveC = removeClientAndInsertInAnotherRoute();
+            Pair moveD = moveRandom2OptClients();
+
+            if (moveA != null) {
+                possibleMoves.add(moveA);
+            }
+            if (moveB != null) {
+                possibleMoves.add(moveB);
+            }
+            if (moveC != null) {
+                possibleMoves.add(moveC);
+            }
+            if (moveD != null) {
+                possibleMoves.add(moveD);
+            }
         }
 
-        listPair.sort((pair1, pair2) -> {
+        possibleMoves.sort((pair1, pair2) -> {
             if (pair1.cost == pair2.cost) return 0;
             if (pair1.cost > pair2.cost) return 1;
             return -1;
         });
 
-        for (Pair p : listPair) {
+        for (Pair p : possibleMoves) {
             if (!this.TL.contains(p.mov) || p.cost <= this.bestCost) {
                 applyMove(this.sol, p.mov);
                 TL.add(p.mov);
@@ -93,7 +118,7 @@ public class TS_ECVRP extends AbstractTS<Route> {
         int posRoute = Utils.getRandomNumber(0, ObjFunction.getNumberRoutes() - 1);
         // TODO: optimize
         int index = Utils.getRandomNumber(0, this.sol.get(posRoute).getClients().size());
-        this.sol.get(posRoute).getChargingStations().add(new MyPair(freeChargingStations.get(pos), index));
+        this.sol.get(posRoute).getChargingStations().add(new RechargePoint(freeChargingStations.get(pos), index));
         Double oldCostRoute = this.sol.get(posRoute).cost;
         Double costRoute = ObjFunction.evaluateRoute(this.sol.get(posRoute));
         Double currentCost = this.sol.cost - oldCostRoute + costRoute;
@@ -105,6 +130,11 @@ public class TS_ECVRP extends AbstractTS<Route> {
         int posRoute = Utils.getRandomNumber(0, ObjFunction.getNumberRoutes() - 1);
         int index = Utils.getRandomNumber(0, this.sol.get(posRoute).getClients().size());
         Route route = this.sol.get(posRoute);
+
+        if (route.chargingStations.isEmpty()) {
+            return null;
+        }
+
         route.getChargingStations().remove(index);
         Double oldCostRoute = this.sol.get(posRoute).cost;
         Double currentCostRoute = ObjFunction.evaluateRoute(route);
@@ -160,10 +190,11 @@ public class TS_ECVRP extends AbstractTS<Route> {
     public static void main(String[] args) throws IOException {
 
         long startTime = System.currentTimeMillis();
+        int fleetSize = 10;
 
-        TS_ECVRP tabusearch = new TS_ECVRP(20, 1000, "instances/c101_21.txt");
+        TS_ECVRP ts = new TS_ECVRP(20, 1000, "instances/c101_21.txt", fleetSize);
 
-        Solution<Route> bestSol = tabusearch.solve();
+        Solution<Route> bestSol = ts.solve();
 
         System.out.println("maxVal = " + bestSol);
         long endTime = System.currentTimeMillis();

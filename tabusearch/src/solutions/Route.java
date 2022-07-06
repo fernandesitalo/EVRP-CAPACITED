@@ -11,7 +11,7 @@ import java.util.List;
 @Builder
 public class Route {
     public List<Integer> clients;
-    public List<MyPair> chargingStations;
+    public List<RechargePoint> chargingStations;
 
     public Integer currentClientsIndex;
     public Integer currentCSIndex;
@@ -43,7 +43,7 @@ public class Route {
         return this.clients.get(this.currentClientsIndex);
     }
 
-    public MyPair getCurrentCs() {
+    public RechargePoint getCurrentCs() {
         return this.chargingStations.get(this.currentCSIndex);
     }
 

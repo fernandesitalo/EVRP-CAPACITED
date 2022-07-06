@@ -85,7 +85,7 @@ public class ECVRP implements Evaluator<Route> {
             demands.add(demand);
             availableTime = max(availableTime, dueDate);
             servicesTimes.add(serviceTime);
-            if(nodeType == "f"){
+            if(Objects.equals(nodeType, "f")){
                 chargeStationsNodes.add(nodeIdx);
             } else if (nodeType == "c"){
                 clientsNodes.add(nodeIdx);
@@ -138,7 +138,6 @@ public class ECVRP implements Evaluator<Route> {
 
     @Override
     public Double evaluate(Solution<Route> sol) {
-        System.out.println("QUANTIDADE DE CARROS: " + routes.size());
         Double sum = 0.;
         for(int i = 0; i < routes.size() ; ++i){
             sum += evaluateRoute(routes.get(i));
