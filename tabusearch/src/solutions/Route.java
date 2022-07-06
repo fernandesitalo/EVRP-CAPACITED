@@ -54,7 +54,11 @@ public class Route {
         return false;
     }
 
-    public void addCS(RechargePoint newCSinRout) {
-        this.chargingStations.add(newCSinRout);
+    public void addClient(Integer e){
+        this.clients.add(e);
+    }
+
+    public void addCS(Integer cs, Integer index){
+        this.chargingStations.add(new MyPair(cs, index));
     }
 }

@@ -29,4 +29,6 @@ public interface Evaluator<E> {
 
 	public abstract Double evaluateRoute(E e);
 
+	public abstract Integer numberOfRoutes();
+
 }

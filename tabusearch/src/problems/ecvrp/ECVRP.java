@@ -25,10 +25,9 @@ public class ECVRP implements Evaluator<Route> {
     public List<Integer> clientsNodes;
     public List<Integer> chargeStationsNodes;
     public Integer depotNode;
-    public Integer parameterM = 10;
-    public Solution<Route> routes;
+    public Integer numberOfRoutes;
 
-    public ECVRP(String filename) throws IOException {
+    public ECVRP(String filename, Integer numberOfRoutes) throws IOException {
         this.demands = new ArrayList<>();
         this.nodesCoordinates = new ArrayList<>();
         this.availableTime = 0.;
@@ -41,8 +40,7 @@ public class ECVRP implements Evaluator<Route> {
         this.loadCapacity = 0.;
         this.batteryConsumptionRate = 0.;
         this.batteryChargeRate = 0.;
-        this.routes = new Solution<>();
-
+        this.numberOfRoutes = numberOfRoutes;
         readInput(filename);
     }
 
@@ -81,14 +79,15 @@ public class ECVRP implements Evaluator<Route> {
             stok.nextToken();
             Double serviceTime = stok.nval;
 
-            nodesCoordinates.add(Coordinates.builder().x(x).y(y).build());
-            demands.add(demand);
-            availableTime = max(availableTime, dueDate);
-            servicesTimes.add(serviceTime);
+            this.nodesCoordinates.add(Coordinates.builder().x(x).y(y).build());
+            this.demands.add(demand);
+            this.availableTime = max(availableTime, dueDate);
+            this.servicesTimes.add(serviceTime);
+
             if(Objects.equals(nodeType, "f")){
-                chargeStationsNodes.add(nodeIdx);
-            } else if (nodeType == "c"){
-                clientsNodes.add(nodeIdx);
+                this.chargeStationsNodes.add(nodeIdx);
+            } else if (Objects.equals(nodeType, "c")){
+                this.clientsNodes.add(nodeIdx);
             }
             nodeIdx++;
 
@@ -96,19 +95,19 @@ public class ECVRP implements Evaluator<Route> {
         } while (typeStok != StreamTokenizer.TT_WORD || !Objects.equals(stok.sval, "Q"));
 
         while(stok.nextToken() != StreamTokenizer.TT_NUMBER){}
-        batteryCapacity = stok.nval;
+        this.batteryCapacity = stok.nval;
 
         while(stok.nextToken() != StreamTokenizer.TT_NUMBER){}
-        loadCapacity = stok.nval;
+        this.loadCapacity = stok.nval;
 
         while(stok.nextToken() != StreamTokenizer.TT_NUMBER){}
-        batteryConsumptionRate = stok.nval;
+        this.batteryConsumptionRate = stok.nval;
 
         while(stok.nextToken() != StreamTokenizer.TT_NUMBER){}
-        batteryChargeRate = stok.nval;
+        this.batteryChargeRate = stok.nval;
 
         while(stok.nextToken() != StreamTokenizer.TT_NUMBER){}
-        velocity = stok.nval;
+        this.velocity = stok.nval;
     }
 
     @Override
@@ -117,13 +116,19 @@ public class ECVRP implements Evaluator<Route> {
     }
 
     @Override
+    public Integer numberOfRoutes() {
+        return this.numberOfRoutes;
+    }
+
+
+    @Override
     public List<Integer> getChargingStations() {
         return this.chargeStationsNodes;
     }
 
     @Override
     public Integer getNumberRoutes() {
-        return parameterM;
+        return this.numberOfRoutes;
     }
 
     @Override
@@ -138,11 +143,12 @@ public class ECVRP implements Evaluator<Route> {
 
     @Override
     public Double evaluate(Solution<Route> sol) {
+        System.out.println("QUANTIDADE DE CARROS: " + sol.size());
         Double sum = 0.;
-        for(int i = 0; i < routes.size() ; ++i){
-            sum += evaluateRoute(routes.get(i));
+        for(int i = 0; i < sol.size() ; ++i){
+            sum += evaluateRoute(sol.get(i));
         }
-        routes.cost = sum;
+        sol.cost = sum;
         return sum;
     }
 
@@ -175,7 +181,10 @@ public class ECVRP implements Evaluator<Route> {
                 route.nextCS();
                 continue;
             }
-            if (!route.hasNextClient()) continue;
+            if (!route.hasNextClient()) {
+                route.nextCS();
+                continue;
+            }
             // go to the next client
             int clientIndex = route.getCurrentClient();
             truck.goToNextNode(this.nodesCoordinates.get(clientIndex), this.demands.get(clientIndex), this.servicesTimes.get(clientIndex));
@@ -191,7 +200,7 @@ public class ECVRP implements Evaluator<Route> {
 
     // just to test
     public static void main(String[] args) throws IOException {
-        ECVRP ecvrp = new ECVRP("instances/c101_21.txt");
+        ECVRP ecvrp = new ECVRP("instances/c101_21.txt", 7);
         // TODO: create a random solution for test and evaluate
     }
 }

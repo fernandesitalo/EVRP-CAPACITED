@@ -14,11 +14,8 @@ import java.util.*;
 
 public class TS_ECVRP extends AbstractTS<Route> {
 
-    int fleetSize;
-
-    public TS_ECVRP(Integer tenure, Integer iterations, String filename, int fleetSize) throws IOException {
-        super(new ECVRP(filename), tenure, iterations);
-        this.fleetSize = fleetSize;
+    public TS_ECVRP(Integer tenure, Integer iterations, String filename, Integer numberOfRoutes) throws IOException {
+        super(new ECVRP(filename, numberOfRoutes), tenure, iterations);
     }
 
     @Override
@@ -31,6 +28,9 @@ public class TS_ECVRP extends AbstractTS<Route> {
     public Solution<Route> createEmptySol() {
         Solution<Route> sol = new Solution<Route>();
         sol.cost = Double.MAX_VALUE;
+        for(int i = 0 ; i < ObjFunction.numberOfRoutes() ; ++i) {
+            sol.add(Route.builder().build());
+        }
         return sol;
     }
 
@@ -89,6 +89,78 @@ public class TS_ECVRP extends AbstractTS<Route> {
         return null;
     }
 
+    @Override
+    public Solution<Route> createARandomSolution() {
+
+        System.out.println("AAAA");
+
+        List<Integer> clients = ObjFunction.getClients();
+        List<Integer> cs = ObjFunction.getChargingStations();
+        Collections.shuffle(clients);
+        Collections.shuffle(cs);
+        this.sol = new Solution<>();
+
+        for(int i = 0 ; i < ObjFunction.numberOfRoutes(); ++i) {
+            this.sol.add(new Route());
+        }
+
+        while(clients.size() > 0) {
+            int posRoute = Utils.getRandomNumber(0, ObjFunction.numberOfRoutes());
+            this.sol.get(posRoute).addClient(clients.get(0));
+            clients.remove(0);
+        }
+
+        while(cs.size() > 0) {
+            int posRoute = Utils.getRandomNumber(0, ObjFunction.numberOfRoutes());
+            int index = Utils.getRandomNumber(0, this.sol.get(posRoute).getClients().size());
+            this.sol.get(posRoute).addCS(cs.get(0), index);
+            cs.remove(0);
+        }
+        this.sol.cost = 0.;
+        for(int i = 0 ; i < this.sol.size(); ++i) {
+            this.sol.get(i).cost = ObjFunction.evaluateRoute(this.sol.get(i));
+            this.sol.cost += this.sol.get(i).cost;
+        }
+        this.cost = this.sol.cost;
+
+        return null;
+    }
+
+    protected void applyMove(Solution<Route> sol, Movement mov) {
+        if (Objects.equals(mov.type, Utils.MOVE_CLIENT_NEIGHBORHOOD)) {
+            int posRoute1 = mov.getIndexes().get(0);
+            int posRoute2 = mov.getIndexes().get(1);
+            int posClient1 = mov.getIndexes().get(2);
+            int posClient2 = mov.getIndexes().get(3);
+
+            int client1 = this.sol.get(posRoute1).getClients().get(posClient1);
+            int client2 = this.sol.get(posRoute2).getClients().get(posClient2);
+
+            this.sol.get(posRoute1).getClients().set(posClient1, client2);
+            this.sol.get(posRoute2).getClients().set(posClient2, client1);
+
+
+            Double oldCost = this.sol.get(posRoute1).cost + this.sol.get(posRoute2).cost;
+            this.sol.get(posRoute1).cost = ObjFunction.evaluateRoute(this.sol.get(posRoute1));
+            this.sol.get(posRoute2).cost = ObjFunction.evaluateRoute(this.sol.get(posRoute2));
+            Double newCost = this.sol.get(posRoute1).cost + this.sol.get(posRoute2).cost;
+
+            this.cost = this.sol.cost + newCost - oldCost;
+            this.sol.cost = this.cost;
+        }
+        if (Objects.equals(mov.type, Utils.MOVE_INSERT_CS)) {
+
+            List<Integer> freeChargingStations = getFreeChargingStations().stream().collect(Collectors.toList());
+
+            int posRoute = mov.getIndexes().get(0);
+            int index = mov.getIndexes().get(1);
+            int pos = mov.getIndexes().get(2);
+
+            this.sol.get(posRoute).getChargingStations().add(new MyPair(freeChargingStations.get(pos), index));
+            Double oldCostRoute = this.sol.get(posRoute).cost;
+            Double costRoute = ObjFunction.evaluateRoute(this.sol.get(posRoute));
+            this.sol.cost += oldCostRoute + costRoute;
+
     protected void applyMove(Double newCost, Movement mov) {
         if (Objects.equals(mov.type, Utils.MOVE_CLIENT_NEIGHBORHOOD)) {
 
@@ -103,17 +175,70 @@ public class TS_ECVRP extends AbstractTS<Route> {
 
             return;
         }
+        if (Objects.equals(mov.type, Utils.MOVE_REMOVE_CS)) {
+            int posRoute = mov.getIndexes().get(0);
+            int index = mov.getIndexes().get(1);
+
+            this.sol.get(posRoute).getChargingStations().remove(index);
+            Double oldCostRoute = this.sol.get(posRoute).cost;
+            Double currentCostRoute = ObjFunction.evaluateRoute(this.sol.get(posRoute));
+
+            this.cost += +currentCostRoute - oldCostRoute;
+
         if (Objects.equals(mov.type, Utils.MOVE_INSERT_CS)) {
             // TODO: this case
             return;
         }
-        // Utils.MOVE_REMOVE_CS
-        // TODO: this case
+        if (Objects.equals(mov.type, Utils.MOVE_RELOCATE_CLIENT)){
+            int posRoute = mov.getIndexes().get(0);
+            int posRoute2 = mov.getIndexes().get(1);
+            int posClient = mov.getIndexes().get(2);
+            int posClient2 = mov.getIndexes().get(3);
+
+            int client1 = this.sol.get(posRoute).clients.get(posClient);
+
+            Route route1 = this.sol.get(posRoute);
+            route1.clients.remove(posClient);
+
+            Route route2 = this.sol.get(posRoute2);
+            route2.clients.add(posClient2, client1);
+
+            this.cost -= route1.cost;
+            this.cost += ObjFunction.evaluateRoute(route1);
+            this.cost -= route2.cost;
+            this.cost += ObjFunction.evaluateRoute(route2);
+        }
     }
 
     protected Pair removeClientAndInsertInAnotherRoute() {
-        // TODO: implementar essa porra aqui: funcao para remover um client de uma route e adcionar em outra Route
-        return Pair.builder().build();
+        int posRoute = Utils.getRandomNumber(0, ObjFunction.getNumberRoutes() - 1);
+        if (this.sol.get(posRoute).clients.size() == 0) {
+            return null;
+        }
+        Double currentCost = this.cost;
+        Movement mov = new Movement();
+        mov.setType(Utils.MOVE_RELOCATE_CLIENT);
+
+        int posClient = Utils.getRandomNumber(0, this.sol.get(posRoute).getClients().size() - 1);
+        int client1 = this.sol.get(posRoute).clients.get(posClient);
+
+        Route route1 = this.sol.get(posRoute);
+        route1.clients.remove(posClient);
+
+        int posRoute2 = Utils.getRandomNumber(0, ObjFunction.getNumberRoutes() - 1);
+        int posClient2 = Utils.getRandomNumber(0, this.sol.get(posRoute2).getClients().size());
+
+        Route route2 = this.sol.get(posRoute2);
+        route2.clients.add(posClient2, client1);
+
+        currentCost -= route1.cost;
+        currentCost += ObjFunction.evaluateRoute(route1);
+        currentCost -= route2.cost;
+        currentCost += ObjFunction.evaluateRoute(route2);
+
+        mov.setIndexes(List.of(posRoute, posRoute2, posClient, posClient2));
+
+        return new Pair(currentCost, mov);
     }
 
     protected Pair insertAChargingStationInRandomRoute() {
@@ -121,6 +246,16 @@ public class TS_ECVRP extends AbstractTS<Route> {
         if (freeCSs.size() == 0) {
             return null;
         }
+        int pos = Utils.getRandomNumber(0, freeChargingStations.size() - 1);
+        int posRoute = Utils.getRandomNumber(0, ObjFunction.getNumberRoutes() - 1);
+        // TODO: optimize
+        int index = Utils.getRandomNumber(0, this.sol.get(posRoute).getClients().size());
+        Route route = this.sol.get(posRoute);
+        route.getChargingStations().add(new MyPair(freeChargingStations.get(pos), index));
+        Double oldCostRoute = route.cost;
+        Double costRoute = ObjFunction.evaluateRoute(route);
+        Double currentCost = this.sol.cost - oldCostRoute + costRoute;
+        Movement mov = Movement.builder().type(Utils.MOVE_INSERT_CS).indexes(List.of(posRoute, index, pos)).build();
 
         int csToInsertIdx = Utils.getRandomNumber(0, freeCSs.size() - 1);
         int routeIdx = Utils.getRandomNumber(0, ObjFunction.getNumberRoutes() - 1);
@@ -144,7 +279,11 @@ public class TS_ECVRP extends AbstractTS<Route> {
 
     protected Pair removeChargingStationInRandomRoute() {
         int posRoute = Utils.getRandomNumber(0, ObjFunction.getNumberRoutes() - 1);
-        int index = Utils.getRandomNumber(0, this.sol.get(posRoute).getClients().size());
+        if (this.sol.get(posRoute).getChargingStations().size() == 0) {
+            return null;
+        }
+
+        int index = Utils.getRandomNumber(0, this.sol.get(posRoute).getChargingStations().size());
         Route route = this.sol.get(posRoute);
 
         if (route.chargingStations.isEmpty()) {
@@ -154,7 +293,9 @@ public class TS_ECVRP extends AbstractTS<Route> {
         route.getChargingStations().remove(index);
         Double oldCostRoute = this.sol.get(posRoute).cost;
         Double currentCostRoute = ObjFunction.evaluateRoute(route);
-        Double currentCost = this.sol.cost - oldCostRoute + currentCostRoute;
+
+        Double currentCost = this.cost + currentCostRoute - oldCostRoute;
+
         Movement mov = Movement.builder().type(Utils.MOVE_REMOVE_CS).indexes(List.of(posRoute, index)).build();
         return new Pair(currentCost, mov);
     }
@@ -175,7 +316,6 @@ public class TS_ECVRP extends AbstractTS<Route> {
         int posRoute2 = Utils.getRandomNumber(0, ObjFunction.getNumberRoutes() - 1);
         Route route1 = this.sol.get(posRoute1);
         Route route2 = this.sol.get(posRoute2);
-
         if (route1.getClients().size() > 0 && route2.getClients().size() > 0) {
             int sizeClients = route1.getClients().size();
             int posClient1 = Utils.getRandomNumber(0, sizeClients - 1);
@@ -184,7 +324,7 @@ public class TS_ECVRP extends AbstractTS<Route> {
             int posClient2 = Utils.getRandomNumber(0, sizeClients - 1);
 
             int client1 = route1.getClients().get(posClient1);
-            int client2 = route1.getClients().get(posClient2);
+            int client2 = route2.getClients().get(posClient2);
 
             route1.getClients().set(posClient1, client2);
             route2.getClients().set(posClient2, client1);
@@ -204,8 +344,9 @@ public class TS_ECVRP extends AbstractTS<Route> {
 
     // just to tests
     public static void main(String[] args) throws IOException {
-
         long startTime = System.currentTimeMillis();
+        TS_ECVRP tabusearch = new TS_ECVRP(20, 1000, "instances/c101_21.txt", 7);
+        Solution<Route> bestSol = tabusearch.solve();
         int fleetSize = 10;
 
         TS_ECVRP ts = new TS_ECVRP(20, 1000, "instances/c101_21.txt", fleetSize);

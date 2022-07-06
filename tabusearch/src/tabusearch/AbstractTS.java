@@ -3,11 +3,12 @@
  */
 package tabusearch;
 
-import java.util.ArrayDeque;
-import java.util.Random;
+import java.util.*;
 
 import problems.Evaluator;
 import problems.ecvrp.Movement;
+import problems.ecvrp.Utils;
+import solutions.Route;
 import solutions.Solution;
 
 /**
@@ -116,6 +117,11 @@ public abstract class AbstractTS<E> {
 		this.iterations = iterations;
 	}
 
+	public abstract Solution<E> createARandomSolution();
+
+	public Solution<E> initialSolution() {
+		return this.createARandomSolution();
+	}
 	public abstract void createInitialSolution();
 
 	/**
@@ -128,7 +134,9 @@ public abstract class AbstractTS<E> {
 	public Solution<E> solve() {
 
 		bestSol = createEmptySol();
+//		initialSolution();
 		createInitialSolution();
+
 		TL = makeTL();
 		for (int i = 0; i < iterations; i++) {
 			neighborhoodMove();
