@@ -53,4 +53,8 @@ public class Route {
         }
         return false;
     }
+
+    public void addCS(RechargePoint newCSinRout) {
+        this.chargingStations.add(newCSinRout);
+    }
 }

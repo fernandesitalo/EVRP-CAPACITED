@@ -11,7 +11,6 @@ import tabusearch.AbstractTS;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class TS_ECVRP extends AbstractTS<Route> {
 
@@ -47,7 +46,6 @@ public class TS_ECVRP extends AbstractTS<Route> {
         this.sol =  sol;
     }
 
-
     @Override
     public Solution<Route> neighborhoodMove() {
         List<Pair> possibleMoves = new ArrayList<>();
@@ -80,7 +78,7 @@ public class TS_ECVRP extends AbstractTS<Route> {
 
         for (Pair p : possibleMoves) {
             if (!this.TL.contains(p.mov) || p.cost <= this.bestCost) {
-                applyMove(this.sol, p.mov);
+                applyMove(p.cost, p.mov);
                 TL.add(p.mov);
                 if (TL.size() > this.tenure * 2) {
                     TL.pop();
@@ -91,12 +89,21 @@ public class TS_ECVRP extends AbstractTS<Route> {
         return null;
     }
 
-    protected void applyMove(Solution<Route> sol, Movement mov) {
-        if (mov.type == Utils.MOVE_CLIENT_NEIGHBORHOOD) {
-            // TODO: this case
+    protected void applyMove(Double newCost, Movement mov) {
+        if (Objects.equals(mov.type, Utils.MOVE_CLIENT_NEIGHBORHOOD)) {
+
+            int routeIndex = mov.getIndexes().get(0);
+            int clientIndex = mov.getIndexes().get(1);
+            int csToInsert = mov.getIndexes().get(1);
+
+            RechargePoint newCSinRout = new RechargePoint(csToInsert, clientIndex);
+
+            this.sol.get(routeIndex).addCS(newCSinRout);
+            this.sol.cost = newCost;
+
             return;
         }
-        if (mov.type == Utils.MOVE_INSERT_CS) {
+        if (Objects.equals(mov.type, Utils.MOVE_INSERT_CS)) {
             // TODO: this case
             return;
         }
@@ -110,19 +117,28 @@ public class TS_ECVRP extends AbstractTS<Route> {
     }
 
     protected Pair insertAChargingStationInRandomRoute() {
-        List<Integer> freeChargingStations = getFreeChargingStations().stream().collect(Collectors.toList());
-        if (freeChargingStations.size() == 0) {
+        List<Integer> freeCSs = getFreeChargingStations().stream().toList();
+        if (freeCSs.size() == 0) {
             return null;
         }
-        int pos = Utils.getRandomNumber(0, freeChargingStations.size() - 1);
-        int posRoute = Utils.getRandomNumber(0, ObjFunction.getNumberRoutes() - 1);
-        // TODO: optimize
-        int index = Utils.getRandomNumber(0, this.sol.get(posRoute).getClients().size());
-        this.sol.get(posRoute).getChargingStations().add(new RechargePoint(freeChargingStations.get(pos), index));
-        Double oldCostRoute = this.sol.get(posRoute).cost;
-        Double costRoute = ObjFunction.evaluateRoute(this.sol.get(posRoute));
-        Double currentCost = this.sol.cost - oldCostRoute + costRoute;
-        Movement mov = Movement.builder().type(Utils.MOVE_INSERT_CS).indexes(List.of(posRoute, index)).build();
+
+        int csToInsertIdx = Utils.getRandomNumber(0, freeCSs.size() - 1);
+        int routeIdx = Utils.getRandomNumber(0, ObjFunction.getNumberRoutes() - 1);
+        int clientIdx = Utils.getRandomNumber(0, this.sol.get(routeIdx).getClients().size());
+
+        RechargePoint newCSinRout = new RechargePoint(freeCSs.get(csToInsertIdx), clientIdx);
+        Route tempRoute = this.sol.get(routeIdx); // todo make copy
+
+        Double newCost = ObjFunction.evaluateRoute(tempRoute);
+        tempRoute.addCS(newCSinRout);
+        Double oldCost = ObjFunction.evaluateRoute(tempRoute);
+
+        Double currentCost = this.sol.cost - oldCost + newCost;
+        Movement mov = Movement.builder()
+                .type(Utils.MOVE_INSERT_CS)
+                .indexes(List.of(routeIdx, clientIdx, freeCSs.get(csToInsertIdx)))
+                .build();
+
         return new Pair(currentCost, mov);
     }
 
