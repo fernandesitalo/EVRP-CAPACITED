@@ -25,9 +25,9 @@ public class ECVRP implements Evaluator<Route> {
     public List<Integer> clientsNodes;
     public List<Integer> chargeStationsNodes;
     public Integer depotNode;
-    public Integer numberOfRoutes;
+    public Integer fleetSize;
 
-    public ECVRP(String filename, Integer numberOfRoutes) throws IOException {
+    public ECVRP(String filename, Integer fleetSize) throws IOException {
         this.demands = new ArrayList<>();
         this.nodesCoordinates = new ArrayList<>();
         this.availableTime = 0.;
@@ -40,7 +40,7 @@ public class ECVRP implements Evaluator<Route> {
         this.loadCapacity = 0.;
         this.batteryConsumptionRate = 0.;
         this.batteryChargeRate = 0.;
-        this.numberOfRoutes = numberOfRoutes;
+        this.numberOfRoutes = fleetSize;
         readInput(filename);
     }
 
