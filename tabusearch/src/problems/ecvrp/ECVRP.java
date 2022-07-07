@@ -1,15 +1,15 @@
 package problems.ecvrp;
 
 import problems.Evaluator;
+import solutions.RechargePoint;
 import solutions.Route;
 import solutions.Solution;
 
 import java.io.*;
 import java.util.*;
 
-import static java.lang.Math.max;
-import static problems.ecvrp.Utils.DEPOT_NODE;
-import static problems.ecvrp.Utils.GOOD_BLOCK;
+import static java.lang.Math.*;
+import static problems.ecvrp.Utils.*;
 
 
 public class ECVRP implements Evaluator<Route> {
@@ -40,7 +40,7 @@ public class ECVRP implements Evaluator<Route> {
         this.loadCapacity = 0.;
         this.batteryConsumptionRate = 0.;
         this.batteryChargeRate = 0.;
-        this.numberOfRoutes = fleetSize;
+        this.fleetSize = fleetSize;
         readInput(filename);
     }
 
@@ -117,7 +117,7 @@ public class ECVRP implements Evaluator<Route> {
 
     @Override
     public Integer numberOfRoutes() {
-        return this.numberOfRoutes;
+        return this.fleetSize;
     }
 
 
@@ -128,7 +128,7 @@ public class ECVRP implements Evaluator<Route> {
 
     @Override
     public Integer getNumberRoutes() {
-        return this.numberOfRoutes;
+        return this.fleetSize;
     }
 
     @Override
@@ -143,11 +143,18 @@ public class ECVRP implements Evaluator<Route> {
 
     @Override
     public Double evaluate(Solution<Route> sol) {
-        System.out.println("QUANTIDADE DE CARROS: " + sol.size());
+
+        Set<Integer> visitedClients = new HashSet<>();
         Double sum = 0.;
-        for(int i = 0; i < sol.size() ; ++i){
-            sum += evaluateRoute(sol.get(i));
+        for (Route route : sol) {
+            sum += evaluateRoute(route);
+            visitedClients.addAll(route.clients);
         }
+
+        if (visitedClients.size() != this.clientsNodes.size()) {
+            return Double.MAX_VALUE;
+        }
+
         sol.cost = sum;
         return sum;
     }
@@ -155,48 +162,42 @@ public class ECVRP implements Evaluator<Route> {
     @Override
     public Double evaluateRoute(Route route) {
 
-        Truck truck = new Truck(
-                this.batteryCapacity,
-                this.availableTime,
-                this.loadCapacity,
-                this.batteryChargeRate,
-                this.batteryConsumptionRate,
-                this.velocity,
-                this.nodesCoordinates.get(DEPOT_NODE),
-                0.,
-                GOOD_BLOCK);
-
-        route.resetIndex();
-
-        route.getChargingStations().sort((cs1, cs2) -> {
-            if (cs1.getIndex() > cs2.getIndex()) return 1;
-            if (cs1.getIndex() < cs2.getIndex()) return -1;
-            return 0;
-        });
-
-        while (route.hasNextClient() || route.hasNextCS()){
-            if (route.visitCSNow()) {
-                int csIdx = route.getCurrentCs().getChargingStation();
-                truck.goToNextChargingStation(this.batteryCapacity,this.nodesCoordinates.get(csIdx), this.servicesTimes.get(csIdx));
-                route.nextCS();
-                continue;
-            }
-            if (!route.hasNextClient()) {
-                route.nextCS();
-                continue;
-            }
-            // go to the next client
-            int clientIndex = route.getCurrentClient();
-            truck.goToNextNode(this.nodesCoordinates.get(clientIndex), this.demands.get(clientIndex), this.servicesTimes.get(clientIndex));
-            route.nextClient();
+        List<Integer> completeRoute = route.clients; // todo, make copy
+        for(RechargePoint r : route.chargingStations) {
+            completeRoute.add(r.index, r.chargingStation);
         }
-        // go to depot
-        truck.goToNextNode(this.nodesCoordinates.get(DEPOT_NODE), this.demands.get(DEPOT_NODE), this.servicesTimes.get(DEPOT_NODE));
-        route.setCost(truck.getCost());
+        completeRoute.add(0, depotNode);
+        completeRoute.add(depotNode);
 
-        return route.getCost();
+        double cost = 0.0;
+        double loadCapacity = this.loadCapacity;
+        double battery = this.batteryCapacity;
+        double time = this.availableTime;
+
+        for (int i = 1; i < completeRoute.size(); i++) {
+            int node1 = completeRoute.get(i-1);
+            int node2 = completeRoute.get(i);
+
+            double dist = calcDist(nodesCoordinates.get(node1), nodesCoordinates.get(node2));
+
+            loadCapacity -= this.demands.get(node2);
+            battery -= dist/this.batteryConsumptionRate;
+            time -= dist/this.velocity + servicesTimes.get(node2);
+
+            if (battery < 0) cost += abs(battery) * PENALTY_BATTERY;
+
+            if (chargeStationsNodes.contains(node2)) {
+                time -= (batteryCapacity - battery) * batteryChargeRate;
+                battery = batteryCapacity;
+            }
+            cost += dist;
+        }
+
+        if (time < 0)  cost += abs(time) * PENALTY_TIME;
+        if (loadCapacity < 0) cost += abs(loadCapacity) * PENALTY_CAPACITY;
+
+        return cost;
     }
-
 
     // just to test
     public static void main(String[] args) throws IOException {

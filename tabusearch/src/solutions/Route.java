@@ -12,53 +12,13 @@ import java.util.List;
 public class Route {
     public List<Integer> clients;
     public List<RechargePoint> chargingStations;
-
-    public Integer currentClientsIndex;
-    public Integer currentCSIndex;
-
     public Double cost;
-
-    public void resetIndex() {
-        this.currentClientsIndex = 0;
-        this.currentCSIndex = 0;
-    }
-
-    public boolean hasNextClient() {
-        return this.clients.size() > this.currentClientsIndex;
-    }
-
-    public boolean hasNextCS() {
-        return this.chargingStations.size() > currentCSIndex;
-    }
-
-    public void nextClient() {
-        this.currentClientsIndex++;
-    }
-
-    public void nextCS() {
-        this.currentCSIndex++;
-    }
-
-    public Integer getCurrentClient() {
-        return this.clients.get(this.currentClientsIndex);
-    }
-
-    public RechargePoint getCurrentCs() {
-        return this.chargingStations.get(this.currentCSIndex);
-    }
-
-    public boolean visitCSNow() {
-        if (hasNextClient() && hasNextCS()) {
-            return this.currentClientsIndex == this.chargingStations.get(this.currentCSIndex).index;
-        }
-        return false;
-    }
 
     public void addClient(Integer e){
         this.clients.add(e);
     }
 
-    public void addCS(Integer cs, Integer index){
-        this.chargingStations.add(new MyPair(cs, index));
+    public void addCS(RechargePoint rp){
+        this.chargingStations.add(rp);
     }
 }

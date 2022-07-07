@@ -11,6 +11,7 @@ import tabusearch.AbstractTS;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class TS_ECVRP extends AbstractTS<Route> {
 
@@ -32,182 +33,6 @@ public class TS_ECVRP extends AbstractTS<Route> {
             sol.add(Route.builder().build());
         }
         return sol;
-    }
-
-    @Override
-    public void createInitialSolution() {
-        Solution<Route> sol = new Solution<Route>();
-        sol.cost = Double.MAX_VALUE;
-
-        for (int i = 0; i < this.fleetSize; i++) {
-            sol.add(new Route(new ArrayList<>(), new ArrayList<>(),0,0,0.0));
-        }
-
-        this.sol =  sol;
-    }
-
-    @Override
-    public Solution<Route> neighborhoodMove() {
-        List<Pair> possibleMoves = new ArrayList<>();
-
-        for (int i = 0; i < 20; ++i) {
-            Pair moveA = insertAChargingStationInRandomRoute();
-            Pair moveB = removeChargingStationInRandomRoute();
-            Pair moveC = removeClientAndInsertInAnotherRoute();
-            Pair moveD = moveRandom2OptClients();
-
-            if (moveA != null) {
-                possibleMoves.add(moveA);
-            }
-            if (moveB != null) {
-                possibleMoves.add(moveB);
-            }
-            if (moveC != null) {
-                possibleMoves.add(moveC);
-            }
-            if (moveD != null) {
-                possibleMoves.add(moveD);
-            }
-        }
-
-        possibleMoves.sort((pair1, pair2) -> {
-            if (pair1.cost == pair2.cost) return 0;
-            if (pair1.cost > pair2.cost) return 1;
-            return -1;
-        });
-
-        for (Pair p : possibleMoves) {
-            if (!this.TL.contains(p.mov) || p.cost <= this.bestCost) {
-                applyMove(p.cost, p.mov);
-                TL.add(p.mov);
-                if (TL.size() > this.tenure * 2) {
-                    TL.pop();
-                }
-                break;
-            }
-        }
-        return null;
-    }
-
-    @Override
-    public Solution<Route> createARandomSolution() {
-
-        System.out.println("AAAA");
-
-        List<Integer> clients = ObjFunction.getClients();
-        List<Integer> cs = ObjFunction.getChargingStations();
-        Collections.shuffle(clients);
-        Collections.shuffle(cs);
-        this.sol = new Solution<>();
-
-        for(int i = 0 ; i < ObjFunction.numberOfRoutes(); ++i) {
-            this.sol.add(new Route());
-        }
-
-        while(clients.size() > 0) {
-            int posRoute = Utils.getRandomNumber(0, ObjFunction.numberOfRoutes());
-            this.sol.get(posRoute).addClient(clients.get(0));
-            clients.remove(0);
-        }
-
-        while(cs.size() > 0) {
-            int posRoute = Utils.getRandomNumber(0, ObjFunction.numberOfRoutes());
-            int index = Utils.getRandomNumber(0, this.sol.get(posRoute).getClients().size());
-            this.sol.get(posRoute).addCS(cs.get(0), index);
-            cs.remove(0);
-        }
-        this.sol.cost = 0.;
-        for(int i = 0 ; i < this.sol.size(); ++i) {
-            this.sol.get(i).cost = ObjFunction.evaluateRoute(this.sol.get(i));
-            this.sol.cost += this.sol.get(i).cost;
-        }
-        this.cost = this.sol.cost;
-
-        return null;
-    }
-
-    protected void applyMove(Solution<Route> sol, Movement mov) {
-        if (Objects.equals(mov.type, Utils.MOVE_CLIENT_NEIGHBORHOOD)) {
-            int posRoute1 = mov.getIndexes().get(0);
-            int posRoute2 = mov.getIndexes().get(1);
-            int posClient1 = mov.getIndexes().get(2);
-            int posClient2 = mov.getIndexes().get(3);
-
-            int client1 = this.sol.get(posRoute1).getClients().get(posClient1);
-            int client2 = this.sol.get(posRoute2).getClients().get(posClient2);
-
-            this.sol.get(posRoute1).getClients().set(posClient1, client2);
-            this.sol.get(posRoute2).getClients().set(posClient2, client1);
-
-
-            Double oldCost = this.sol.get(posRoute1).cost + this.sol.get(posRoute2).cost;
-            this.sol.get(posRoute1).cost = ObjFunction.evaluateRoute(this.sol.get(posRoute1));
-            this.sol.get(posRoute2).cost = ObjFunction.evaluateRoute(this.sol.get(posRoute2));
-            Double newCost = this.sol.get(posRoute1).cost + this.sol.get(posRoute2).cost;
-
-            this.cost = this.sol.cost + newCost - oldCost;
-            this.sol.cost = this.cost;
-        }
-        if (Objects.equals(mov.type, Utils.MOVE_INSERT_CS)) {
-
-            List<Integer> freeChargingStations = getFreeChargingStations().stream().collect(Collectors.toList());
-
-            int posRoute = mov.getIndexes().get(0);
-            int index = mov.getIndexes().get(1);
-            int pos = mov.getIndexes().get(2);
-
-            this.sol.get(posRoute).getChargingStations().add(new MyPair(freeChargingStations.get(pos), index));
-            Double oldCostRoute = this.sol.get(posRoute).cost;
-            Double costRoute = ObjFunction.evaluateRoute(this.sol.get(posRoute));
-            this.sol.cost += oldCostRoute + costRoute;
-
-    protected void applyMove(Double newCost, Movement mov) {
-        if (Objects.equals(mov.type, Utils.MOVE_CLIENT_NEIGHBORHOOD)) {
-
-            int routeIndex = mov.getIndexes().get(0);
-            int clientIndex = mov.getIndexes().get(1);
-            int csToInsert = mov.getIndexes().get(1);
-
-            RechargePoint newCSinRout = new RechargePoint(csToInsert, clientIndex);
-
-            this.sol.get(routeIndex).addCS(newCSinRout);
-            this.sol.cost = newCost;
-
-            return;
-        }
-        if (Objects.equals(mov.type, Utils.MOVE_REMOVE_CS)) {
-            int posRoute = mov.getIndexes().get(0);
-            int index = mov.getIndexes().get(1);
-
-            this.sol.get(posRoute).getChargingStations().remove(index);
-            Double oldCostRoute = this.sol.get(posRoute).cost;
-            Double currentCostRoute = ObjFunction.evaluateRoute(this.sol.get(posRoute));
-
-            this.cost += +currentCostRoute - oldCostRoute;
-
-        if (Objects.equals(mov.type, Utils.MOVE_INSERT_CS)) {
-            // TODO: this case
-            return;
-        }
-        if (Objects.equals(mov.type, Utils.MOVE_RELOCATE_CLIENT)){
-            int posRoute = mov.getIndexes().get(0);
-            int posRoute2 = mov.getIndexes().get(1);
-            int posClient = mov.getIndexes().get(2);
-            int posClient2 = mov.getIndexes().get(3);
-
-            int client1 = this.sol.get(posRoute).clients.get(posClient);
-
-            Route route1 = this.sol.get(posRoute);
-            route1.clients.remove(posClient);
-
-            Route route2 = this.sol.get(posRoute2);
-            route2.clients.add(posClient2, client1);
-
-            this.cost -= route1.cost;
-            this.cost += ObjFunction.evaluateRoute(route1);
-            this.cost -= route2.cost;
-            this.cost += ObjFunction.evaluateRoute(route2);
-        }
     }
 
     protected Pair removeClientAndInsertInAnotherRoute() {
@@ -246,16 +71,6 @@ public class TS_ECVRP extends AbstractTS<Route> {
         if (freeCSs.size() == 0) {
             return null;
         }
-        int pos = Utils.getRandomNumber(0, freeChargingStations.size() - 1);
-        int posRoute = Utils.getRandomNumber(0, ObjFunction.getNumberRoutes() - 1);
-        // TODO: optimize
-        int index = Utils.getRandomNumber(0, this.sol.get(posRoute).getClients().size());
-        Route route = this.sol.get(posRoute);
-        route.getChargingStations().add(new MyPair(freeChargingStations.get(pos), index));
-        Double oldCostRoute = route.cost;
-        Double costRoute = ObjFunction.evaluateRoute(route);
-        Double currentCost = this.sol.cost - oldCostRoute + costRoute;
-        Movement mov = Movement.builder().type(Utils.MOVE_INSERT_CS).indexes(List.of(posRoute, index, pos)).build();
 
         int csToInsertIdx = Utils.getRandomNumber(0, freeCSs.size() - 1);
         int routeIdx = Utils.getRandomNumber(0, ObjFunction.getNumberRoutes() - 1);
@@ -342,16 +157,167 @@ public class TS_ECVRP extends AbstractTS<Route> {
     }
 
 
+    @Override
+    public void createInitialSolution() {
+//        Solution<Route> sol = new Solution<Route>();
+//        sol.cost = Double.MAX_VALUE;
+//
+//        for (int i = 0; i < this.tenure; i++) {
+//            sol.add(new Route(new ArrayList<>(), new ArrayList<>(),0,0,0.0));
+//        }
+
+        this.sol =  createARandomSolution();
+    }
+
+    @Override
+    public Solution<Route> neighborhoodMove() {
+        List<Pair> possibleMoves = new ArrayList<>();
+
+        for (int i = 0; i < 20; ++i) {
+            Pair moveA = insertAChargingStationInRandomRoute();
+            Pair moveB = removeChargingStationInRandomRoute();
+            Pair moveC = removeClientAndInsertInAnotherRoute();
+            Pair moveD = moveRandom2OptClients();
+
+            if (moveA != null) {
+                possibleMoves.add(moveA);
+            }
+            if (moveB != null) {
+                possibleMoves.add(moveB);
+            }
+            if (moveC != null) {
+                possibleMoves.add(moveC);
+            }
+            if (moveD != null) {
+                possibleMoves.add(moveD);
+            }
+        }
+
+        possibleMoves.sort((pair1, pair2) -> {
+            if (pair1.cost == pair2.cost) return 0;
+            if (pair1.cost > pair2.cost) return 1;
+            return -1;
+        });
+
+        for (Pair p : possibleMoves) {
+            if (!this.TL.contains(p.mov) || p.cost <= this.bestCost) {
+                applyMove(this.sol, p.mov);
+                TL.add(p.mov);
+                if (TL.size() > this.tenure * 2) {
+                    TL.pop();
+                }
+                break;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public Solution<Route> createARandomSolution() {
+
+        List<Integer> clients = ObjFunction.getClients();
+        List<Integer> cs = ObjFunction.getChargingStations();
+        Collections.shuffle(clients);
+        Collections.shuffle(cs);
+
+        this.sol = new Solution<Route>();
+
+        for(int i = 0 ; i < ObjFunction.numberOfRoutes(); ++i) {
+            this.sol.add(new Route());
+        }
+
+        while(clients.size() > 0) {
+            int posRoute = Utils.getRandomNumber(0, ObjFunction.numberOfRoutes());
+            this.sol.get(posRoute).addClient(clients.get(0));
+            clients.remove(0);
+        }
+
+        while(cs.size() > 0) {
+            int posRoute = Utils.getRandomNumber(0, ObjFunction.numberOfRoutes());
+            int index = Utils.getRandomNumber(0, this.sol.get(posRoute).getClients().size());
+            this.sol.get(posRoute).addCS(new RechargePoint(cs.get(0), index));
+            cs.remove(0);
+        }
+        this.sol.cost = 0.;
+        for(int i = 0 ; i < this.sol.size(); ++i) {
+            this.sol.get(i).cost = ObjFunction.evaluateRoute(this.sol.get(i));
+            this.sol.cost += this.sol.get(i).cost;
+        }
+        this.cost = this.sol.cost;
+
+        return null;
+    }
+
+    protected void applyMove(Solution<Route> sol, Movement mov) {
+        if (Objects.equals(mov.type, Utils.MOVE_CLIENT_NEIGHBORHOOD)) {
+            int posRoute1 = mov.getIndexes().get(0);
+            int posRoute2 = mov.getIndexes().get(1);
+            int posClient1 = mov.getIndexes().get(2);
+            int posClient2 = mov.getIndexes().get(3);
+
+            int client1 = this.sol.get(posRoute1).getClients().get(posClient1);
+            int client2 = this.sol.get(posRoute2).getClients().get(posClient2);
+
+            this.sol.get(posRoute1).getClients().set(posClient1, client2);
+            this.sol.get(posRoute2).getClients().set(posClient2, client1);
+
+
+            Double oldCost = this.sol.get(posRoute1).cost + this.sol.get(posRoute2).cost;
+            this.sol.get(posRoute1).cost = ObjFunction.evaluateRoute(this.sol.get(posRoute1));
+            this.sol.get(posRoute2).cost = ObjFunction.evaluateRoute(this.sol.get(posRoute2));
+            Double newCost = this.sol.get(posRoute1).cost + this.sol.get(posRoute2).cost;
+
+            this.cost = this.sol.cost + newCost - oldCost;
+            this.sol.cost = this.cost;
+        } else if (Objects.equals(mov.type, Utils.MOVE_INSERT_CS)) {
+
+            List<Integer> freeChargingStations = getFreeChargingStations().stream().collect(Collectors.toList());
+
+            int posRoute = mov.getIndexes().get(0);
+            int index = mov.getIndexes().get(1);
+            int pos = mov.getIndexes().get(2);
+
+            this.sol.get(posRoute).getChargingStations().add(new RechargePoint(freeChargingStations.get(pos), index));
+            Double oldCostRoute = this.sol.get(posRoute).cost;
+            Double costRoute = ObjFunction.evaluateRoute(this.sol.get(posRoute));
+            this.sol.cost += oldCostRoute + costRoute;
+        } else if (Objects.equals(mov.type, Utils.MOVE_REMOVE_CS)) {
+            int posRoute = mov.getIndexes().get(0);
+            int index = mov.getIndexes().get(1);
+
+            this.sol.get(posRoute).getChargingStations().remove(index);
+            Double oldCostRoute = this.sol.get(posRoute).cost;
+            Double currentCostRoute = ObjFunction.evaluateRoute(this.sol.get(posRoute));
+
+            this.cost += +currentCostRoute - oldCostRoute;
+        } else  if (Objects.equals(mov.type, Utils.MOVE_RELOCATE_CLIENT)){
+            int posRoute = mov.getIndexes().get(0);
+            int posRoute2 = mov.getIndexes().get(1);
+            int posClient = mov.getIndexes().get(2);
+            int posClient2 = mov.getIndexes().get(3);
+
+            int client1 = this.sol.get(posRoute).clients.get(posClient);
+
+            Route route1 = this.sol.get(posRoute);
+            route1.clients.remove(posClient);
+
+            Route route2 = this.sol.get(posRoute2);
+            route2.clients.add(posClient2, client1);
+
+            this.cost -= route1.cost;
+            this.cost += ObjFunction.evaluateRoute(route1);
+            this.cost -= route2.cost;
+            this.cost += ObjFunction.evaluateRoute(route2);
+        }
+    }
+
+
     // just to tests
     public static void main(String[] args) throws IOException {
         long startTime = System.currentTimeMillis();
-        TS_ECVRP tabusearch = new TS_ECVRP(20, 1000, "instances/c101_21.txt", 7);
-        Solution<Route> bestSol = tabusearch.solve();
         int fleetSize = 10;
-
-        TS_ECVRP ts = new TS_ECVRP(20, 1000, "instances/c101_21.txt", fleetSize);
-
-        Solution<Route> bestSol = ts.solve();
+        TS_ECVRP tabusearch = new TS_ECVRP(20, 1000, "instances/c101C5.txt", fleetSize);
+        Solution<Route> bestSol = tabusearch.solve();
 
         System.out.println("maxVal = " + bestSol);
         long endTime = System.currentTimeMillis();

@@ -14,9 +14,6 @@ public class Utils {
     public static final Double PENALTY_TIME = 1000.0;
     public static final Double PENALTY_BATTERY = 1000.0;
 
-
-    public static final Integer DEPOT_NODE = 0;
-
     public static Integer getRandomNumber(int min, int max) {
         return (int) ((Math.random() * (max - min)) + min);
     }
