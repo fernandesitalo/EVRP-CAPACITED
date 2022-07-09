@@ -116,7 +116,7 @@ public class TS_EVRP_NEIGHBORHOOD {
         return allChargingStations;
     }
 
-    protected Pair moveRandom2OptClients(Solution<Route> sol) throws Exception {
+    protected Pair swapRandomNeighbor(Solution<Route> sol) throws Exception {
         int routeAIdx = Utils.getRandomNumber(0, this.fleetSize - 1);
         int routeBIdx = Utils.getRandomNumber(0, this.fleetSize - 1);
 
@@ -150,7 +150,7 @@ public class TS_EVRP_NEIGHBORHOOD {
 
         Movement mov = Movement
                 .builder()
-                .type(Utils.MOVE_2OPT)
+                .type(Utils.SWAP_MOVE)
                 .indexes(List.of(routeAIdx, routeBIdx, client1Idx, client2Idx))
                 .build();
 
@@ -193,7 +193,7 @@ public class TS_EVRP_NEIGHBORHOOD {
     }
 
     protected void applyMove(Solution<Route> sol, Movement mov) throws Exception {
-        if (Objects.equals(mov.type, Utils.MOVE_2OPT)) {
+        if (Objects.equals(mov.type, Utils.SWAP_MOVE)) {
             int routeAIdx = mov.getIndexes().get(0);
             int routeBIdx = mov.getIndexes().get(1);
             int clientIdxA = mov.getIndexes().get(2);
