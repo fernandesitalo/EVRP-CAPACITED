@@ -28,17 +28,21 @@ public class TS_EVRP_NEIGHBORHOOD {
 
     protected Pair removeClientAndInsertInAnotherRoute(Solution<Route> sol) {
         int posRoute = Utils.getRandomNumber(0, ObjFunction.getNumberRoutes() - 1);
-        if (sol.getRouteCopy(posRoute).clients.size() == 0) {
+
+        if (sol.getRoute(posRoute).clients.size() == 0) {
             return null;
         }
-        Double currentCost = sol.cost;
+
+
         int posClient1 = Utils.getRandomNumber(0, sol.getRoute(posRoute).getClients().size() - 1);
         int client1 = sol.getRoute(posRoute).clients.get(posClient1);
 
         Route route1 = sol.getRouteCopy(posRoute);
 
         int posRoute2 = Utils.getRandomNumber(0, ObjFunction.getNumberRoutes() - 1);
-        int posClient2 = Utils.getRandomNumber(0, sol.getRouteCopy(posRoute2).getClients().size());
+        int posClient2 = Utils.getRandomNumber(0, sol.getRoute(posRoute2).getClients().size());
+
+        Double currentCost = sol.cost;
 
         if(posRoute == posRoute2){
             route1.clients.add(posClient2, client1);
@@ -46,9 +50,7 @@ public class TS_EVRP_NEIGHBORHOOD {
             currentCost -= sol.getRoute(posRoute).cost;
             currentCost += ObjFunction.evaluateRoute(route1);
         } else {
-
             Route route2 = sol.getRouteCopy(posRoute2);
-
             route1.clients.remove(posClient1);
             route2.clients.add(posClient2, client1);
             currentCost -= route1.cost;
@@ -229,17 +231,28 @@ public class TS_EVRP_NEIGHBORHOOD {
 
     private void applyReallocateClientMove(Solution<Route> sol, int routeIdx1, int routeIdx2, int clientIdx1, int clientIdx2) {
 
-        int client1 = sol.getRouteCopy(routeIdx1).clients.get(clientIdx1);
+        int client1 = sol.getRoute(routeIdx1).clients.get(clientIdx1);
 
-        Route route1 = sol.getRoute(routeIdx1);
-        route1.clients.remove(clientIdx1);
+        if(routeIdx1 == routeIdx2){
+            sol.getRoute(routeIdx1).clients.add(clientIdx2, client1);
+            sol.getRoute(routeIdx1).clients.remove(clientIdx1);
+            sol.cost -= sol.getRoute(routeIdx1).cost;
+            Double newCost = ObjFunction.evaluateRoute(sol.getRoute(routeIdx1));
+            sol.getRoute(routeIdx1).cost = newCost;
+            sol.cost += newCost;
+        } else {
+            Route route1 = sol.getRoute(routeIdx1);
+            route1.clients.remove(clientIdx1);
+            Route route2 = sol.getRoute(routeIdx2);
+            route2.clients.add(clientIdx2, client1);
 
-        Route route2 = sol.getRoute(routeIdx2);
-        route2.clients.add(clientIdx2, client1);
-
-        sol.cost -= route1.cost;
-        sol.cost += ObjFunction.evaluateRoute(route1);
-        sol.cost -= route2.cost;
-        sol.cost += ObjFunction.evaluateRoute(route2);
+            sol.cost -= route1.cost;
+            Double newCost1 = ObjFunction.evaluateRoute(route1);
+            sol.cost -= route2.cost;
+            Double newCost2 = ObjFunction.evaluateRoute(route2);
+            route1.cost = newCost1;
+            route2.cost = newCost2;
+            sol.cost += newCost1 + newCost2;
+        }
     }
 }

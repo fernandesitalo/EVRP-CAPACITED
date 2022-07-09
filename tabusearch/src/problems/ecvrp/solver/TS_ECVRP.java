@@ -41,12 +41,12 @@ public class TS_ECVRP extends AbstractTS<Route> {
         for (int i = 0; i < 1; ++i) {
             Pair moveA = neighborhood.insertAChargingStationInRandomRoute(this.sol);
             Pair moveB = neighborhood.removeChargingStationInRandomRoute(this.sol);
-//            Pair moveC = neighborhood.removeClientAndInsertInAnotherRoute(this.sol);
+            Pair moveC = neighborhood.removeClientAndInsertInAnotherRoute(this.sol);
             Pair moveD = neighborhood.swapRandomNeighbor(this.sol);
 
             if (moveA != null) possibleMoves.add(moveA);
             if (moveB != null) possibleMoves.add(moveB);
-//            if (moveC != null) possibleMoves.add(moveC);
+            if (moveC != null) possibleMoves.add(moveC);
             if (moveD != null) possibleMoves.add(moveD);
         }
 
