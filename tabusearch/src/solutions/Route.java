@@ -33,6 +33,10 @@ public class Route {
         this.chargingStations.add(rp);
     }
 
+    public void removeCS(int indexToRemove){
+        this.chargingStations.remove(indexToRemove);
+    }
+
     public List<Integer> getClientsCopy() {
         return new ArrayList<>(clients);
     }

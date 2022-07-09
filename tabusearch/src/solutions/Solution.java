@@ -1,7 +1,5 @@
 package solutions;
 
-import problems.Evaluator;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -48,9 +46,13 @@ public class Solution<E> {
 		this.routes.get(randomRoutIdx).addClient(client);
 	}
 
-	public void addCs(int randomRoutIdx, int clientIndex, int cs) {
+	public void addCS(int randomRoutIdx, int clientIndex, int cs) {
 		RechargePoint rp = new RechargePoint(cs, clientIndex);
 		this.routes.get(randomRoutIdx).addCS(rp);
+	}
+
+	public void removeCS(int routeIdx, int indexToRemove) {
+		this.routes.get(routeIdx).removeCS(indexToRemove);
 	}
 }
 
