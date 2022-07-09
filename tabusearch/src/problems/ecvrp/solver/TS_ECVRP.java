@@ -54,7 +54,7 @@ public class TS_ECVRP extends AbstractTS<Route> {
         possibleMoves.sort(Comparator.comparingDouble(Pair::getCost));
 
         for (Pair p : possibleMoves) {
-            if (!this.TL.contains(p.mov) || p.cost <= this.bestCost) {
+            if (!this.TL.contains(p.mov) || p.cost <= this.bestSol.cost) {
                 neighborhood.applyMove(this.sol, p.mov);
                 TL.add(p.mov);
                 if (TL.size() > this.tenure * 2) {
@@ -71,9 +71,6 @@ public class TS_ECVRP extends AbstractTS<Route> {
         List<Integer> clients = ObjFunction.getClients();
 
         List<Integer> chargingStations = ObjFunction.getChargingStations();
-
-        System.out.println("Clients: " + clients);
-        System.out.println("CSs: " + chargingStations);
 
         Collections.shuffle(clients);
         Collections.shuffle(chargingStations);
@@ -119,33 +116,10 @@ public class TS_ECVRP extends AbstractTS<Route> {
     // just to tests
     public static void main(String[] args) throws Exception {
         long startTime = System.currentTimeMillis();
-        int fleetSize = 2;
-        TS_ECVRP tabusearch = new TS_ECVRP(20, 1000, "instances/c101C5.txt", fleetSize);
+        int fleetSize = 3;
+        TS_ECVRP tabusearch = new TS_ECVRP(30, 10000000, "instances/c101C5.txt", fleetSize);
 
-        // TO TEST INSERT CS
-//        tabusearch.initialSolution();
-//        tabusearch.sol.getRoute(0).setChargingStations(new ArrayList<>());
-//        tabusearch.sol.getRoute(1).setChargingStations(new ArrayList<>());
-//
-//        tabusearch.printSolution_test();
-//        Pair a = tabusearch.neighborhood.insertAChargingStationInRandomRoute(tabusearch.sol);
-//        int routeIdx = a.mov.getIndexes().get(0);
-//        int cdIdx = a.mov.getIndexes().get(1);
-//        int posIdx = a.mov.getIndexes().get(2);
-//        tabusearch.neighborhood.applyInsertCsMove(tabusearch.sol,routeIdx,cdIdx,posIdx);
-//        tabusearch.printSolution_test();
-
-        // TO TEST REMOVE CS
-//        tabusearch.initialSolution();
-//        tabusearch.printSolution_test();
-//        Pair a = tabusearch.neighborhood.removeChargingStationInRandomRoute(tabusearch.sol);
-//        int routeIdx = a.mov.getIndexes().get(0);
-//        int indexToRemove = a.mov.getIndexes().get(1);
-//        tabusearch.neighborhood.applyRemoveCsMove(tabusearch.sol,routeIdx,indexToRemove);
-//        tabusearch.printSolution_test();
-
-//        exit(0);
-
+        verbose = true;
         Solution<Route> bestSol = tabusearch.solve();
 
         System.out.println("minVal = " + bestSol);

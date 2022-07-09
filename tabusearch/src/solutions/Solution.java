@@ -46,9 +46,9 @@ public class Solution<E> {
 		this.routes.get(randomRoutIdx).addClient(client);
 	}
 
-	public void addCS(int randomRoutIdx, int clientIndex, int cs) {
+	public void addCS(int routeIdx, int clientIndex, int cs) {
 		RechargePoint rp = new RechargePoint(cs, clientIndex);
-		this.routes.get(randomRoutIdx).addCS(rp);
+		this.routes.get(routeIdx).addCS(rp);
 	}
 
 	public void removeCS(int routeIdx, int indexToRemove) {

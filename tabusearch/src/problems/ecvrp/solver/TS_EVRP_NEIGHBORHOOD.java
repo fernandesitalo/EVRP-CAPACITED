@@ -13,6 +13,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static java.lang.Math.abs;
+import static java.lang.System.exit;
 import static problems.ecvrp.Utils.swap;
 
 
@@ -88,14 +89,13 @@ public class TS_EVRP_NEIGHBORHOOD {
 
     protected Pair removeChargingStationInRandomRoute(Solution<Route> sol) {
         int posRoute = Utils.getRandomNumber(0, ObjFunction.getNumberRoutes() - 1);
-
-        if (sol.getRouteCopy(posRoute).getChargingStations().size() == 0) {
+        Route route = sol.getRouteCopy(posRoute);
+        if (route.chargingStations.size() == 0) {
             return null;
         }
         int index = Utils.getRandomNumber(0, sol.getRouteCopy(posRoute).getChargingStations().size());
 
-        Route route = sol.getRouteCopy(posRoute);
-        route.getChargingStations().remove(index);
+        route.removeCS(index);
 
         Double oldCostRoute = sol.getRouteCopy(posRoute).cost;
         Double currentCostRoute = ObjFunction.evaluateRoute(route);
@@ -157,10 +157,10 @@ public class TS_EVRP_NEIGHBORHOOD {
         return new Pair(newCost, mov);
     }
 
-    protected void applyInsertCsMove(Solution<Route> sol, int routeIdx, int csIdx, int posIdx){
-        List<Integer> freeChargingStations = getFreeChargingStations(sol).stream().collect(Collectors.toList());
+
+    protected void applyInsertCsMove(Solution<Route> sol, int routeIdx, int clientIdx, int csToInsertIdx){
         Double oldCostRoute = sol.getRouteCopy(routeIdx).cost;
-        sol.addCS(routeIdx, posIdx, freeChargingStations.get(csIdx));
+        sol.addCS(routeIdx, clientIdx, csToInsertIdx);
         Double newRoute = ObjFunction.evaluateRoute(sol.getRouteCopy(routeIdx));
         sol.routes.get(routeIdx).cost = newRoute;
         sol.cost = sol.cost -oldCostRoute + newRoute;
@@ -198,16 +198,19 @@ public class TS_EVRP_NEIGHBORHOOD {
             int routeBIdx = mov.getIndexes().get(1);
             int clientIdxA = mov.getIndexes().get(2);
             int clientIdxB = mov.getIndexes().get(3);
+
             apply2OptMove(sol, routeAIdx, routeBIdx, clientIdxA, clientIdxB);
         } else if (Objects.equals(mov.type, Utils.MOVE_INSERT_CS)) {
             int routeIdx = mov.getIndexes().get(0);
-            int cdIdx = mov.getIndexes().get(1);
-            int posIdx = mov.getIndexes().get(2);
-            applyInsertCsMove(sol, routeIdx, cdIdx, posIdx);
+            int clientIdx = mov.getIndexes().get(1);
+            int csToInsertIdx = mov.getIndexes().get(2);
+            applyInsertCsMove(sol, routeIdx, clientIdx, csToInsertIdx);
+
         } else if (Objects.equals(mov.type, Utils.MOVE_REMOVE_CS)) {
             int routeIdx = mov.getIndexes().get(0);
             int indexToRemove = mov.getIndexes().get(1);
             applyRemoveCsMove(sol, routeIdx, indexToRemove);
+
         } else  if (Objects.equals(mov.type, Utils.MOVE_RELOCATE_CLIENT)){
             int posRoute = mov.getIndexes().get(0);
             int posRoute2 = mov.getIndexes().get(1);

@@ -41,7 +41,7 @@ public abstract class AbstractTS<E> {
 	/**
 	 * the best solution cost
 	 */
-	protected Double bestCost;
+//	protected Double bestCost;
 
 	/**
 	 * the best solution
@@ -132,8 +132,10 @@ public abstract class AbstractTS<E> {
 			neighborhoodMove();
 			if (bestSol.cost > sol.cost) {
 				bestSol = new Solution<E>(sol);
-				if (verbose)
+				bestSol.cost = sol.cost;
+				if (verbose) {
 					System.out.println("(Iter. " + i + ") BestSol = " + bestSol);
+				}
 			}
 		}
 

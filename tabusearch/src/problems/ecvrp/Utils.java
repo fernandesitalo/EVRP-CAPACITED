@@ -4,10 +4,10 @@ public class Utils {
     public static final Integer BAD_BLOCK = -1;
     public static final Integer GOOD_BLOCK = -2;
 
-    public static final Integer SWAP_MOVE = -1;
-    public static final Integer MOVE_INSERT_CS = -2;
-    public static final Integer MOVE_REMOVE_CS = -3;
-    public static final Integer MOVE_RELOCATE_CLIENT = -4;
+    public static final Integer SWAP_MOVE = -10;
+    public static final Integer MOVE_INSERT_CS = -20;
+    public static final Integer MOVE_REMOVE_CS = -30;
+    public static final Integer MOVE_RELOCATE_CLIENT = -40;
 
 
     public static final Double PENALTY_CAPACITY = 1000.0;
