@@ -210,8 +210,6 @@ public class ECVRP implements Evaluator<Route> {
 //            System.out.println("Load Penality");
         }
 
-//        System.out.println("Cost route = " +  cost);
-
         return route.cost = cost;
     }
 

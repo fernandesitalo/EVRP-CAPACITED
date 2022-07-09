@@ -41,7 +41,6 @@ public class TS_ECVRP extends AbstractTS<Route> {
         for (int i = 0; i < 1; ++i) {
             Pair moveA = neighborhood.insertAChargingStationInRandomRoute(this.sol);
             Pair moveB = neighborhood.removeChargingStationInRandomRoute(this.sol);
-
 //            Pair moveC = neighborhood.removeClientAndInsertInAnotherRoute(this.sol);
             Pair moveD = neighborhood.swapRandomNeighbor(this.sol);
 
@@ -117,7 +116,7 @@ public class TS_ECVRP extends AbstractTS<Route> {
     public static void main(String[] args) throws Exception {
         long startTime = System.currentTimeMillis();
         int fleetSize = 3;
-        TS_ECVRP tabusearch = new TS_ECVRP(30, 10000000, "instances/c101C5.txt", fleetSize);
+        TS_ECVRP tabusearch = new TS_ECVRP(30, 10000, "instances/c101C5.txt", fleetSize);
 
         verbose = true;
         Solution<Route> bestSol = tabusearch.solve();
