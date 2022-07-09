@@ -11,6 +11,8 @@ import problems.ecvrp.Utils;
 import solutions.Route;
 import solutions.Solution;
 
+import static java.lang.Math.abs;
+
 /**
  * Abstract class for metaheuristic Tabu Search. It consider a minimization problem.
  * 
@@ -42,11 +44,6 @@ public abstract class AbstractTS<E> {
 	protected Double bestCost;
 
 	/**
-	 * the incumbent solution cost
-	 */
-	protected Double cost;
-
-	/**
 	 * the best solution
 	 */
 	protected Solution<E> bestSol;
@@ -66,6 +63,7 @@ public abstract class AbstractTS<E> {
 	 */
 	protected Integer tenure;
 
+	protected Integer fleetSize;
 
 	/**
 	 * the Tabu List of elements to enter the solution.
@@ -82,14 +80,6 @@ public abstract class AbstractTS<E> {
 	public abstract ArrayDeque<Movement> makeTL();
 
 	/**
-	 * Creates a new solution which is empty, i.e., does not contain any
-	 * candidate solution element.
-	 * 
-	 * @return An empty solution.
-	 */
-	public abstract Solution<E> createEmptySol();
-
-	/**
 	 * The TS local search phase is responsible for repeatedly applying a
 	 * neighborhood operation while the solution is getting improved, i.e.,
 	 * until a local optimum is attained. When a local optimum is attained
@@ -99,7 +89,7 @@ public abstract class AbstractTS<E> {
 	 * 
 	 * @return An local optimum solution.
 	 */
-	public abstract Solution<E> neighborhoodMove();
+	public abstract Solution<E> neighborhoodMove() throws Exception;
 
 	/**
 	 * Constructor for the AbstractTS class.
@@ -111,18 +101,19 @@ public abstract class AbstractTS<E> {
 	 * @param iterations
 	 *            The number of iterations which the TS will be executed.
 	 */
-	public AbstractTS(Evaluator<E> objFunction, Integer tenure, Integer iterations) {
+	public AbstractTS(Evaluator<E> objFunction, Integer tenure, Integer iterations, Integer fleetSize) {
 		this.ObjFunction = objFunction;
 		this.tenure = tenure;
 		this.iterations = iterations;
+		this.fleetSize = fleetSize;
 	}
 
-	public abstract Solution<E> createARandomSolution();
+	public abstract Solution<E> createARandomSolution() throws Exception;
 
-	public Solution<E> initialSolution() {
+	public Solution<E> initialSolution() throws Exception {
 		return this.createARandomSolution();
 	}
-	public abstract void createInitialSolution();
+	public abstract void createInitialSolution() throws Exception;
 
 	/**
 	 * The TS mainframe. It consists of a constructive heuristic followed by
@@ -131,12 +122,11 @@ public abstract class AbstractTS<E> {
 	 * 
 	 * @return The best feasible solution obtained throughout all iterations.
 	 */
-	public Solution<E> solve() {
 
-		bestSol = createEmptySol();
-//		initialSolution();
-		createInitialSolution();
+	public Solution<E> solve() throws Exception {
 
+		bestSol = new Solution<E>(this.fleetSize);
+		initialSolution();
 		TL = makeTL();
 		for (int i = 0; i < iterations; i++) {
 			neighborhoodMove();
@@ -148,16 +138,5 @@ public abstract class AbstractTS<E> {
 		}
 
 		return bestSol;
-	}
-
-	/**
-	 * A standard stopping criteria for the constructive heuristic is to repeat
-	 * until the incumbent solution improves by inserting a new candidate
-	 * element.
-	 * 
-	 * @return true if the criteria is met.
-	 */
-	public Boolean constructiveStopCriteria() {
-		return cost <= sol.cost	;
 	}
 }

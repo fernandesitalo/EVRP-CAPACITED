@@ -142,27 +142,32 @@ public class ECVRP implements Evaluator<Route> {
     }
 
     @Override
-    public Double evaluate(Solution<Route> sol) {
+    public Double evaluate(Solution<Route> sol) throws Exception {
 
         Set<Integer> visitedClients = new HashSet<>();
-        Double sum = 0.;
-        for (Route route : sol) {
-            sum += evaluateRoute(route);
+        double sum = 0.;
+        for (Route route : sol.routes) {
+            evaluateRoute(route);
+
+            sum += route.cost;
             visitedClients.addAll(route.clients);
         }
 
         if (visitedClients.size() != this.clientsNodes.size()) {
-            return Double.MAX_VALUE;
+            return sol.cost = Double.MAX_VALUE;
         }
 
-        sol.cost = sum;
-        return sum;
+        return sol.cost = sum;
     }
 
     @Override
     public Double evaluateRoute(Route route) {
 
-        List<Integer> completeRoute = route.clients; // todo, make copy
+        if(route.clients.isEmpty()) {
+            return route.cost = 0.0;
+        }
+
+        List<Integer> completeRoute = route.getClientsCopy();
         for(RechargePoint r : route.chargingStations) {
             completeRoute.add(r.index, r.chargingStation);
         }
@@ -184,7 +189,10 @@ public class ECVRP implements Evaluator<Route> {
             battery -= dist/this.batteryConsumptionRate;
             time -= dist/this.velocity + servicesTimes.get(node2);
 
-            if (battery < 0) cost += abs(battery) * PENALTY_BATTERY;
+            if (battery < 0) {
+//                System.out.println("Battery Penalty");
+                cost += abs(battery) * PENALTY_BATTERY;
+            }
 
             if (chargeStationsNodes.contains(node2)) {
                 time -= (batteryCapacity - battery) * batteryChargeRate;
@@ -193,10 +201,18 @@ public class ECVRP implements Evaluator<Route> {
             cost += dist;
         }
 
-        if (time < 0)  cost += abs(time) * PENALTY_TIME;
-        if (loadCapacity < 0) cost += abs(loadCapacity) * PENALTY_CAPACITY;
+        if (time < 0)  {
+            cost += abs(time) * PENALTY_TIME;
+//            System.out.println("Time Penalty");
+        }
+        if (loadCapacity < 0) {
+            cost += abs(loadCapacity) * PENALTY_CAPACITY;
+//            System.out.println("Load Penality");
+        }
 
-        return cost;
+//        System.out.println("Cost route = " +  cost);
+
+        return route.cost = cost;
     }
 
     // just to test

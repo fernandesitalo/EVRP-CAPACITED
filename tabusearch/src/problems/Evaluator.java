@@ -15,20 +15,20 @@ import java.util.List;
  */
 public interface Evaluator<E> {
 
-	public abstract List<Integer> getClients();
+	List<Integer> getClients();
 
-	public abstract List<Integer> getChargingStations();
+	List<Integer> getChargingStations();
 
-	public abstract Integer getNumberRoutes();
+	Integer getNumberRoutes();
 
-	public abstract Integer getNumberClients();
+	Integer getNumberClients();
 
-	public abstract Integer getNumberChargingStations();
+	Integer getNumberChargingStations();
 
-	public abstract Double evaluate(Solution<E> sol);
+	Double evaluate(Solution<E> sol) throws Exception;
 
-	public abstract Double evaluateRoute(E e);
+	Double evaluateRoute(E e);
 
-	public abstract Integer numberOfRoutes();
+	Integer numberOfRoutes();
 
 }
