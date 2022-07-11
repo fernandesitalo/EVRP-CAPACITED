@@ -28,7 +28,7 @@ public class ECVRP implements Evaluator<Route> {
     public Integer depotNode;
     public Integer fleetSize;
 
-    public ECVRP(String filename, Integer fleetSize) throws IOException {
+    public ECVRP(String filename, double fleetSizeFactor) throws IOException {
         this.demands = new ArrayList<>();
         this.nodesCoordinates = new ArrayList<>();
         this.availableTime = 0.;
@@ -41,8 +41,8 @@ public class ECVRP implements Evaluator<Route> {
         this.loadCapacity = 0.;
         this.batteryConsumptionRate = 0.;
         this.batteryChargeRate = 0.;
-        this.fleetSize = fleetSize;
         readInput(filename);
+        this.fleetSize = (int) ceil(this.clientsNodes.size() / fleetSizeFactor);
     }
 
     protected void readInput(String filename) throws IOException {
@@ -145,6 +145,11 @@ public class ECVRP implements Evaluator<Route> {
     @Override
     public double getTimeAvailable() {
         return this.availableTime;
+    }
+
+    @Override
+    public int getFleetSize() {
+        return this.fleetSize;
     }
 
     @Override
@@ -251,11 +256,5 @@ public class ECVRP implements Evaluator<Route> {
         }
 
         return route.cost = cost;
-    }
-
-    // just to test
-    public static void main(String[] args) throws IOException {
-        ECVRP ecvrp = new ECVRP("instances/c101_21.txt", 7);
-        // TODO: create a random solution for test and evaluate
     }
 }

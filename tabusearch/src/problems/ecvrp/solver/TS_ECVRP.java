@@ -3,7 +3,6 @@ package problems.ecvrp.solver;
 import problems.ecvrp.ECVRP;
 import problems.ecvrp.MoveWithCost;
 import problems.ecvrp.Utils;
-import solutions.RechargePoint;
 import solutions.Route;
 import solutions.Solution;
 import tabusearch.AbstractTS;
@@ -11,15 +10,18 @@ import tabusearch.AbstractTS;
 import java.io.IOException;
 import java.util.*;
 
+import static java.lang.Math.min;
 import static problems.ecvrp.Utils.*;
 
 
 public class TS_ECVRP extends AbstractTS<Route> {
 
     TS_EVRP_NEIGHBORHOOD neighborhood;
+    int fleetSize;
 
-    public TS_ECVRP(Integer tenure, Integer iterations, String filename, Integer fleetSize) throws IOException {
-        super(new ECVRP(filename, fleetSize), tenure, iterations, fleetSize);
+    public TS_ECVRP(Integer tenure, Integer iterations, ECVRP instance) throws IOException {
+        super(instance, tenure, iterations);
+        this.fleetSize = instance.fleetSize;
         this.neighborhood = new TS_EVRP_NEIGHBORHOOD(this.ObjFunction, this.fleetSize);
     }
 
@@ -176,21 +178,75 @@ public class TS_ECVRP extends AbstractTS<Route> {
     }
 
     public static void main(String[] args) throws Exception {
-        long startTime = System.currentTimeMillis();
-        int fleetSize = 13;
-//        TS_ECVRP tabusearch = new TS_ECVRP(5, 10000, "instances/c101C5.txt", fleetSize);
-        while(true) {
-            TS_ECVRP tabusearch = new TS_ECVRP(10, 10000, "instances/c201_21.txt", fleetSize);
-//        208,9
+        List<String> instances = List.of(
+                "instances/c101C5.txt",
+                "instances/c101C10.txt",
+                "instances/c101_21.txt",
+                "instances/c102_21.txt",
+                "instances/c103C15.txt",
+                "instances/c103C5.txt",
+                "instances/r101_21.txt",
+                "instances/r102C10.txt",
+                "instances/r102C15.txt",
+                "instances/r102_21.txt",
+                "instances/r103C10.txt",
+                "instances/r103_21.txt",
+                "instances/r104C5.txt"
+        );
 
-            verbose = true;
-            Solution<Route> bestSol = tabusearch.solve();
+        List<Double> fleetSizeFactors = List.of(1.5);
 
-            System.out.println("minVal = " + bestSol);
-            System.out.println("valid = " + bestSol.isValid);
-            long endTime = System.currentTimeMillis();
-            long totalTime = endTime - startTime;
-            System.out.println("Time = " + (double) totalTime / (double) 1000 + " seg");
+        System.out.println("instance\tclients\tchargeStations\tbatteryCapacity\tloadCapacity\tfs\tusedEVs\ttime\tF\tavgF\tisValid");
+
+        for (String instanceDir : instances) {
+            for (double fleetSizeFactor : fleetSizeFactors) {
+                ECVRP instance = new ECVRP(instanceDir, fleetSizeFactor);
+                TS_ECVRP ts = new TS_ECVRP(10, 10000, instance);
+                verbose = false;
+
+                double minCost = Double.MAX_VALUE;
+                double avgCost = 0;
+                double avgTime = 0;
+                boolean isValid = false;
+                int usedEvs = 0;
+
+                for (int i = 0; i < 10; i++) {
+                    long startTime = System.currentTimeMillis();
+                    Solution<Route> sol = ts.solve();
+                    if (sol.cost < minCost) {
+                        minCost = sol.cost;
+                        isValid = sol.isValid;
+                        usedEvs = 0;
+                        for (Route r : sol.routes) {
+                            if (r.clients.size() > 0) {
+                                usedEvs++;
+                            }
+                        }
+                    }
+                    minCost = min(minCost, sol.cost);
+                    avgCost += sol.cost;
+                    avgTime += (double) (System.currentTimeMillis() - startTime) / (double) 1000;
+                }
+
+                avgCost /= 10;
+                avgTime /= 10;
+
+                //            System.out.print("instance clients chargeStations batteryCapacity loadCapacity fs usedEVs time F avgF isValid");
+                System.out.printf(
+                        "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+                        instanceDir,
+                        ts.ObjFunction.getNumberClients(),
+                        ts.ObjFunction.getChargingStations().size(),
+                        ts.ObjFunction.getBatteryCapacity(),
+                        ts.ObjFunction.getLoadCapacity(),
+                        (int) (ts.ObjFunction.getNumberClients() / fleetSizeFactor),
+                        usedEvs,
+                        avgTime,
+                        minCost,
+                        avgCost,
+                        isValid
+                );
+            }
         }
     }
 }

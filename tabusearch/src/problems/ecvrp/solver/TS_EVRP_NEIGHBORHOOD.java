@@ -30,7 +30,7 @@ public class TS_EVRP_NEIGHBORHOOD {
         int route2Idx = Utils.getRandomNumber(0, ObjFunction.getNumberRoutes() - 1);
 
         while (route2Idx == route1Idx)
-            route2Idx = Utils.getRandomNumber(0, ObjFunction.getNumberRoutes() - 1);
+            route2Idx = Utils.getRandomNumberInclusiveMax(0, ObjFunction.getNumberRoutes() - 1);
 
         Route route1 = sol.getRouteCopy(route1Idx);
         if (route1.clients.size() == 0)  return null;

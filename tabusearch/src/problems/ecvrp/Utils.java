@@ -1,5 +1,7 @@
 package problems.ecvrp;
 
+import java.util.Random;
+
 public class Utils {
     public static final Integer BAD_BLOCK = -1;
     public static final Integer GOOD_BLOCK = -2;
@@ -16,6 +18,11 @@ public class Utils {
 
     public static Integer getRandomNumber(int min, int max) {
         return (int) ((Math.random() * (max - min)) + min);
+    }
+
+    public static Integer getRandomNumberInclusiveMax(int min, int max) {
+        return min + (int)(Math.random() * ((max - min) + 1));
+
     }
 
     public static void swap(Integer a, Integer b) {

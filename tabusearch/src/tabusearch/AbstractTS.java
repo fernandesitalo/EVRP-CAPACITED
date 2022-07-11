@@ -6,7 +6,6 @@ package tabusearch;
 import java.util.*;
 
 import problems.Evaluator;
-import solutions.Route;
 import solutions.Solution;
 
 import static java.lang.Math.abs;
@@ -61,8 +60,6 @@ public abstract class AbstractTS<E> {
 	 */
 	protected Integer tenure;
 
-	protected Integer fleetSize;
-
 	/**
 	 * the Tabu List of elements to enter the solution.
 	 */
@@ -91,19 +88,15 @@ public abstract class AbstractTS<E> {
 
 	/**
 	 * Constructor for the AbstractTS class.
-	 * 
-	 * @param objFunction
-	 *            The objective function being minimized.
-	 * @param tenure
-	 *            The Tabu tenure parameter. 
-	 * @param iterations
-	 *            The number of iterations which the TS will be executed.
+	 *
+	 * @param objFunction The objective function being minimized.
+	 * @param tenure      The Tabu tenure parameter.
+	 * @param iterations  The number of iterations which the TS will be executed.
 	 */
-	public AbstractTS(Evaluator<E> objFunction, Integer tenure, Integer iterations, Integer fleetSize) {
+	public AbstractTS(Evaluator<E> objFunction, Integer tenure, Integer iterations) {
 		this.ObjFunction = objFunction;
 		this.tenure = tenure;
 		this.iterations = iterations;
-		this.fleetSize = fleetSize;
 	}
 
 	public abstract Solution<E> createARandomSolution() throws Exception;
@@ -123,7 +116,7 @@ public abstract class AbstractTS<E> {
 
 	public Solution<E> solve() throws Exception {
 
-		bestSol = new Solution<E>(this.fleetSize);
+		bestSol = new Solution<E>(this.ObjFunction.getFleetSize());
 		initialSolution();
 		TL = makeTL();
 		for (int i = 0; i < iterations; i++) {
@@ -131,7 +124,7 @@ public abstract class AbstractTS<E> {
 			if (bestSol.cost > sol.cost) {
 				bestSol = new Solution<E>(sol);
 				bestSol.cost = sol.cost;
-				System.out.println("(Iter. " + i + ") BestSol = " + sol.cost + " ,isValid = " + sol.isValid);
+//				System.out.println("(Iter. " + i + ") BestSol = " + sol.cost + " ,isValid = " + sol.isValid);
 			}
 		}
 

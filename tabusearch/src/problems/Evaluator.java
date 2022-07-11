@@ -45,4 +45,6 @@ public interface Evaluator<E> {
 
 	double getTimeAvailable();
 
+	int getFleetSize();
+
 }

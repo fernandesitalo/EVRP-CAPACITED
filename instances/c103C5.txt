@@ -8,8 +8,8 @@ C65        c          48.0       40.0       10.0       67.0       139.0      90.
 C57        c          40.0       15.0       40.0       989.0      1063.0     90.0       
 C24        c          25.0       50.0       10.0       0.0        1131.0     90.0       
 
-Q Vehicle fuel tank capacity /77.75/
-C Vehicle load capacity /200.0/
-r fuel consumption rate /1.0/
-g inverse refueling rate /3.47/
-v average Velocity /1.0/
+Q Vehicle fuel tank capacity 77.75
+C Vehicle load capacity 200.0
+r fuel consumption rate 1.0
+g inverse refueling rate 3.47
+v average Velocity 1.0
