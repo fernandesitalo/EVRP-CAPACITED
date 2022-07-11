@@ -1,7 +1,7 @@
 package problems.ecvrp.solver;
 
 import problems.ecvrp.ECVRP;
-import problems.ecvrp.Pair;
+import problems.ecvrp.MoveWithCost;
 import problems.ecvrp.Utils;
 import solutions.RechargePoint;
 import solutions.Route;
@@ -10,6 +10,7 @@ import tabusearch.AbstractTS;
 
 import java.io.IOException;
 import java.util.*;
+
 
 public class TS_ECVRP extends AbstractTS<Route> {
 
@@ -33,13 +34,13 @@ public class TS_ECVRP extends AbstractTS<Route> {
 
     @Override
     public Solution<Route> neighborhoodMove() throws Exception {
-        List<Pair> possibleMoves = new ArrayList<>();
+        List<MoveWithCost> possibleMoves = new ArrayList<>();
 
-        for (int i = 0; i < 1; ++i) {
-            Pair moveA = neighborhood.insertAChargingStationInRandomRoute(this.sol);
-            Pair moveB = neighborhood.removeChargingStationInRandomRoute(this.sol);
-            Pair moveC = neighborhood.removeClientAndInsertInAnotherRoute(this.sol);
-            Pair moveD = neighborhood.swapRandomNeighbor(this.sol);
+        for (int i = 0; i < 30; ++i) {
+            MoveWithCost moveA = neighborhood.insertAChargingStationInRandomRoute(this.sol);
+            MoveWithCost moveB = neighborhood.removeChargingStationInRandomRoute(this.sol);
+            MoveWithCost moveC = neighborhood.removeClientAndInsertInAnotherRoute(this.sol);
+            MoveWithCost moveD = neighborhood.swapRandomNeighbor(this.sol);
 
             if (moveA != null) possibleMoves.add(moveA);
             if (moveB != null) possibleMoves.add(moveB);
@@ -47,10 +48,10 @@ public class TS_ECVRP extends AbstractTS<Route> {
             if (moveD != null) possibleMoves.add(moveD);
         }
 
-        possibleMoves.sort(Comparator.comparingDouble(Pair::getCost));
+        possibleMoves.sort(Comparator.comparingDouble(MoveWithCost::getCost));
 
-        for (Pair p : possibleMoves) {
-            if (!this.TL.contains(p.mov) || p.cost <= this.bestSol.cost) {
+        for (MoveWithCost p : possibleMoves) {
+            if (!this.TL.contains(p.mov) || p.cost < this.bestSol.cost) {
                 neighborhood.applyMove(this.sol, p.mov);
                 ObjFunction.evaluate(this.sol);
                 TL.add(p.mov);
@@ -58,6 +59,9 @@ public class TS_ECVRP extends AbstractTS<Route> {
                     TL.pop();
                 }
                 break;
+            } else {
+                System.out.println(TL);
+                System.out.println(" >>> " + p.mov);
             }
         }
         return null;
@@ -94,6 +98,69 @@ public class TS_ECVRP extends AbstractTS<Route> {
         return this.sol;
     }
 
+    public int findClosestClient(int node, List<Integer> clients, double capacity, double time, double battery, List<Double> demands) {
+        double dist = Double.MAX_VALUE;
+        int clientIdx = -1;
+        for (int i = 0 ; i <  clients.size(); i++) {
+            int c = clients.get(i);
+            double d = ObjFunction.calcDist(node, c);
+            if (d > battery || demands.get(c) > capacity) {
+                continue;
+            }
+            if (d  < dist) {
+                dist = d;
+                clientIdx = i;
+            }
+        }
+        return clientIdx;
+    }
+
+    @Override
+    public Solution<Route> createGreedSolution() throws Exception {
+        List<Integer> clients = ObjFunction.getClients();
+        List<Integer> chargingStations = ObjFunction.getChargingStations();
+        Collections.shuffle(clients);
+        Collections.shuffle(chargingStations);
+
+        this.sol = new Solution<Route>(0);
+        System.out.println(ObjFunction.getClients());
+
+        for (int i = 0; i < this.fleetSize; i++) {
+            Route route = new Route();
+            double capacity = this.ObjFunction.getBatteryCapacity();
+            double time = this.ObjFunction.getTimeAvailable();
+            double battery = this.ObjFunction.getBatteryCapacity();
+            List<Double> demands = this.ObjFunction.getDemands();
+            int curNode = 0;
+
+            while(true) {
+                int closestIdx = findClosestClient(curNode, clients, capacity, time, battery, demands);
+                if (closestIdx == -1) {
+                    break;
+                }
+                int closestNode = clients.get(closestIdx);
+                double dist = ObjFunction.calcDist(curNode, closestNode);
+                battery -= dist;
+                capacity -= demands.get(closestNode);
+                route.addClient(closestNode);
+                clients.remove(closestIdx);
+                curNode = closestNode;
+            }
+            System.out.println(route.clients);
+            this.sol.routes.add(route);
+        }
+
+        int routeIdx = 0;
+        for (int c : clients) {
+            this.sol.getRoute(routeIdx).addClient(c);
+            routeIdx++;
+        }
+
+        ObjFunction.evaluate(this.sol);
+
+        return this.sol;
+    }
+
     public void printSolution_test(){
         int idx = 0;
         System.out.println("Total Cost: " + this.sol.cost);
@@ -114,7 +181,7 @@ public class TS_ECVRP extends AbstractTS<Route> {
     public static void main(String[] args) throws Exception {
         long startTime = System.currentTimeMillis();
         int fleetSize = 3;
-        TS_ECVRP tabusearch = new TS_ECVRP(30, 10000, "instances/c101C5.txt", fleetSize);
+        TS_ECVRP tabusearch = new TS_ECVRP(5, 10000, "instances/c101C5.txt", fleetSize);
 //        208,9
 
         verbose = true;

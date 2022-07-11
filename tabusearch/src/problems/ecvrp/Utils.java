@@ -18,12 +18,6 @@ public class Utils {
         return (int) ((Math.random() * (max - min)) + min);
     }
 
-    public static Double calcDist(Coordinates nodeA, Coordinates nodeB) {
-        double deltaX = nodeA.getX() - nodeB.getX();
-        double deltaY = nodeA.getY() - nodeB.getY();
-        return Math.sqrt(deltaY*deltaY + deltaX*deltaX);
-    }
-
     public static void swap(Integer a, Integer b) {
         int temp = b;
         b = a;

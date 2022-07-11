@@ -112,7 +112,7 @@ public class ECVRP implements Evaluator<Route> {
 
     @Override
     public List<Integer> getClients() {
-        return this.clientsNodes;
+        return new ArrayList<>(this.clientsNodes);
     }
 
     @Override
@@ -129,6 +129,26 @@ public class ECVRP implements Evaluator<Route> {
     @Override
     public Integer getNumberRoutes() {
         return this.fleetSize;
+    }
+
+    @Override
+    public double getBatteryCapacity() {
+        return this.batteryCapacity;
+    }
+
+    @Override
+    public double getLoadCapacity() {
+        return this.loadCapacity;
+    }
+
+    @Override
+    public double getTimeAvailable() {
+        return this.availableTime;
+    }
+
+    @Override
+    public List<Double> getDemands() {
+        return this.demands;
     }
 
     @Override
@@ -158,6 +178,22 @@ public class ECVRP implements Evaluator<Route> {
         }
 
         return sol.cost = sum;
+    }
+
+    @Override
+    public Double calcDist(Coordinates nodeA, Coordinates nodeB) {
+        double deltaX = nodeA.getX() - nodeB.getX();
+        double deltaY = nodeA.getY() - nodeB.getY();
+        return Math.sqrt(deltaY*deltaY + deltaX*deltaX);
+    }
+
+    public Double calcDist(Integer a, Integer b) {
+
+        Coordinates nodeA = nodesCoordinates.get(a);
+        Coordinates nodeB = nodesCoordinates.get(b);
+        double deltaX = nodeA.getX() - nodeB.getX();
+        double deltaY = nodeA.getY() - nodeB.getY();
+        return Math.sqrt(deltaY*deltaY + deltaX*deltaX);
     }
 
     @Override

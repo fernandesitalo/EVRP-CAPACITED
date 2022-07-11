@@ -1,7 +1,7 @@
 package problems.ecvrp.solver;
 
 import problems.Evaluator;
-import problems.ecvrp.Pair;
+import problems.ecvrp.MoveWithCost;
 import problems.ecvrp.Utils;
 import solutions.RechargePoint;
 import solutions.Route;
@@ -25,7 +25,7 @@ public class TS_EVRP_NEIGHBORHOOD {
         this.fleetSize = fleetSize1;
     }
 
-    protected Pair removeClientAndInsertInAnotherRoute(Solution<Route> sol) {
+    protected MoveWithCost removeClientAndInsertInAnotherRoute(Solution<Route> sol) {
         int route1Idx = Utils.getRandomNumber(0, ObjFunction.getNumberRoutes() - 1);
         int route2Idx = Utils.getRandomNumber(0, ObjFunction.getNumberRoutes() - 1);
 
@@ -49,10 +49,10 @@ public class TS_EVRP_NEIGHBORHOOD {
         route2.clients.add(client2Idx, client1);
         currentCost += ObjFunction.evaluateRoute(route1) + ObjFunction.evaluateRoute(route2);
 
-        return new Pair(currentCost, List.of(Utils.MOVE_RELOCATE_CLIENT, route1Idx, route2Idx, client1Idx, client2Idx));
+        return new MoveWithCost(currentCost, List.of(Utils.MOVE_RELOCATE_CLIENT, route1Idx, route2Idx, client1Idx, client2Idx));
     }
 
-    public Pair insertAChargingStationInRandomRoute(Solution<Route> sol) {
+    public MoveWithCost insertAChargingStationInRandomRoute(Solution<Route> sol) {
         List<Integer> freeCSs = getFreeChargingStations(sol).stream().toList();
 
         if (freeCSs.size() == 0) {
@@ -72,10 +72,10 @@ public class TS_EVRP_NEIGHBORHOOD {
 
         Double currentCost = sol.cost - oldRouteCost + newCost;
 
-        return new Pair(currentCost, List.of(Utils.MOVE_INSERT_CS, routeIdx, clientIdx, freeCSs.get(csToInsertIdx)));
+        return new MoveWithCost(currentCost, List.of(Utils.MOVE_INSERT_CS, routeIdx, clientIdx, freeCSs.get(csToInsertIdx)));
     }
 
-    protected Pair removeChargingStationInRandomRoute(Solution<Route> sol) {
+    protected MoveWithCost removeChargingStationInRandomRoute(Solution<Route> sol) {
         int posRoute = Utils.getRandomNumber(0, ObjFunction.getNumberRoutes() - 1);
         Route route = sol.getRouteCopy(posRoute);
         if (route.chargingStations.size() == 0) {
@@ -90,7 +90,7 @@ public class TS_EVRP_NEIGHBORHOOD {
 
         Double currentCost = sol.cost + currentCostRoute - oldCostRoute;
 
-        return new Pair(currentCost, List.of(Utils.MOVE_REMOVE_CS, posRoute, index));
+        return new MoveWithCost(currentCost, List.of(Utils.MOVE_REMOVE_CS, posRoute, index));
     }
 
     protected Set<Integer> getFreeChargingStations(Solution<Route> sol) {
@@ -103,7 +103,7 @@ public class TS_EVRP_NEIGHBORHOOD {
         return allChargingStations;
     }
 
-    protected Pair swapRandomNeighbor(Solution<Route> sol) throws Exception {
+    protected MoveWithCost swapRandomNeighbor(Solution<Route> sol) throws Exception {
         int routeAIdx = Utils.getRandomNumber(0, this.fleetSize - 1);
         int routeBIdx = Utils.getRandomNumber(0, this.fleetSize - 1);
 
@@ -135,7 +135,7 @@ public class TS_EVRP_NEIGHBORHOOD {
         Double newRoutesCost = ObjFunction.evaluateRoute(route1) + ObjFunction.evaluateRoute(route2);
         newCost += newRoutesCost;
 
-        return new Pair(newCost, List.of(Utils.SWAP_MOVE, routeAIdx, routeBIdx, client1Idx, client2Idx));
+        return new MoveWithCost(newCost, List.of(Utils.SWAP_MOVE, routeAIdx, routeBIdx, client1Idx, client2Idx));
     }
 
     protected void applyInsertCsMove(Solution<Route> sol, int routeIdx, int clientIdx, int csToInsert){

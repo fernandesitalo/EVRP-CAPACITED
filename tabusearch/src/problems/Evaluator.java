@@ -1,7 +1,9 @@
 package problems;
 
+import problems.ecvrp.Coordinates;
 import solutions.Solution;
 
+import javax.swing.*;
 import java.util.List;
 
 /**
@@ -21,6 +23,8 @@ public interface Evaluator<E> {
 
 	Integer getNumberRoutes();
 
+	List<Double> getDemands();
+
 	Integer getNumberClients();
 
 	Integer getNumberChargingStations();
@@ -29,6 +33,16 @@ public interface Evaluator<E> {
 
 	Double evaluateRoute(E e);
 
+	Double calcDist(Coordinates nodeA, Coordinates nodeB);
+
+	Double calcDist(Integer a, Integer b);
+
 	Integer numberOfRoutes();
+
+	double getBatteryCapacity();
+
+	double getLoadCapacity();
+
+	double getTimeAvailable();
 
 }

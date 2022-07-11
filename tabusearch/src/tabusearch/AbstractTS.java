@@ -6,6 +6,7 @@ package tabusearch;
 import java.util.*;
 
 import problems.Evaluator;
+import solutions.Route;
 import solutions.Solution;
 
 import static java.lang.Math.abs;
@@ -108,7 +109,8 @@ public abstract class AbstractTS<E> {
 	public abstract Solution<E> createARandomSolution() throws Exception;
 
 	public Solution<E> initialSolution() throws Exception {
-		return this.createARandomSolution();
+//		return this.createARandomSolution();
+		return this.createGreedSolution();
 	}
 	public abstract void createInitialSolution() throws Exception;
 
@@ -127,15 +129,18 @@ public abstract class AbstractTS<E> {
 		TL = makeTL();
 		for (int i = 0; i < iterations; i++) {
 			neighborhoodMove();
+//			System.out.println("(Iter. " + i + ") BestSol = " + this.sol);
 			if (bestSol.cost > sol.cost) {
 				bestSol = new Solution<E>(sol);
 				bestSol.cost = sol.cost;
-				if (verbose) {
+//				if (verbose) {
 					System.out.println("(Iter. " + i + ") BestSol = " + bestSol);
-				}
+//				}
 			}
 		}
 
 		return bestSol;
 	}
+
+	public abstract Solution<E> createGreedSolution() throws Exception;
 }
