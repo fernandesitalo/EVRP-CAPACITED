@@ -123,7 +123,6 @@ public class TS_ECVRP extends AbstractTS<Route> {
         Collections.shuffle(chargingStations);
 
         this.sol = new Solution<Route>(0);
-        System.out.println(ObjFunction.getClients());
 
         for (int i = 0; i < this.fleetSize; i++) {
             Route route = new Route();
@@ -146,14 +145,13 @@ public class TS_ECVRP extends AbstractTS<Route> {
                 clients.remove(closestIdx);
                 curNode = closestNode;
             }
-            System.out.println(route.clients);
             this.sol.routes.add(route);
         }
 
         int routeIdx = 0;
         for (int c : clients) {
             this.sol.getRoute(routeIdx).addClient(c);
-            routeIdx++;
+            routeIdx = (routeIdx+1) % fleetSize;
         }
 
         ObjFunction.evaluate(this.sol);
@@ -182,6 +180,7 @@ public class TS_ECVRP extends AbstractTS<Route> {
         long startTime = System.currentTimeMillis();
         int fleetSize = 3;
         TS_ECVRP tabusearch = new TS_ECVRP(5, 10000, "instances/c101C5.txt", fleetSize);
+//        TS_ECVRP tabusearch = new TS_ECVRP(5, 10000, "instances/c201_21.txt", fleetSize);
 //        208,9
 
         verbose = true;
