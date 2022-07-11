@@ -170,9 +170,9 @@ public class ECVRP implements Evaluator<Route> {
         List<Integer> completeRoute = route.getClientsCopy();
         for(RechargePoint r : route.chargingStations) {
             try {
-                completeRoute.add(r.index, r.chargingStation);
+                completeRoute.add(min(r.index, completeRoute.size()-1), r.chargingStation);
             } catch (Exception e) {
-                System.out.println("DEBUG ARRUMAR AQUI");
+                System.out.println("DEBUG ARRUMAR AQUI "  + r.index + " " + completeRoute.size() + " " + min(r.index, completeRoute.size()-1) + " " +e.getMessage());
             }
         }
         completeRoute.add(0, depotNode);

@@ -1,7 +1,6 @@
 package problems.ecvrp.solver;
 
 import problems.ecvrp.ECVRP;
-import problems.ecvrp.Movement;
 import problems.ecvrp.Pair;
 import problems.ecvrp.Utils;
 import solutions.RechargePoint;
@@ -11,8 +10,6 @@ import tabusearch.AbstractTS;
 
 import java.io.IOException;
 import java.util.*;
-
-import static java.lang.System.exit;
 
 public class TS_ECVRP extends AbstractTS<Route> {
 
@@ -24,8 +21,8 @@ public class TS_ECVRP extends AbstractTS<Route> {
     }
 
     @Override
-    public ArrayDeque<Movement> makeTL() {
-        ArrayDeque<Movement> _TS = new ArrayDeque<>();
+    public ArrayDeque<List<Integer>> makeTL() {
+        ArrayDeque<List<Integer>> _TS = new ArrayDeque<>();
         return _TS;
     }
 
@@ -55,6 +52,7 @@ public class TS_ECVRP extends AbstractTS<Route> {
         for (Pair p : possibleMoves) {
             if (!this.TL.contains(p.mov) || p.cost <= this.bestSol.cost) {
                 neighborhood.applyMove(this.sol, p.mov);
+                ObjFunction.evaluate(this.sol);
                 TL.add(p.mov);
                 if (TL.size() > this.tenure * 2) {
                     TL.pop();

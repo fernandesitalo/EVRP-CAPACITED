@@ -2,6 +2,8 @@ package problems.ecvrp;
 
 import lombok.*;
 
+import java.util.List;
+
 
 @Getter
 @Setter
@@ -10,5 +12,5 @@ import lombok.*;
 @Builder
 public class Pair {
     public Double cost;
-    public Movement mov;
+    public List<Integer> mov;
 }

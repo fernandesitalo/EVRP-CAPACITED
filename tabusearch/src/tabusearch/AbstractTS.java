@@ -6,9 +6,6 @@ package tabusearch;
 import java.util.*;
 
 import problems.Evaluator;
-import problems.ecvrp.Movement;
-import problems.ecvrp.Utils;
-import solutions.Route;
 import solutions.Solution;
 
 import static java.lang.Math.abs;
@@ -68,7 +65,7 @@ public abstract class AbstractTS<E> {
 	/**
 	 * the Tabu List of elements to enter the solution.
 	 */
-	protected ArrayDeque<Movement> TL;
+	protected ArrayDeque<List<Integer>> TL;
 	
 	/**
 	 * Creates the Tabu List, which is an ArrayDeque of the Tabu
@@ -77,7 +74,7 @@ public abstract class AbstractTS<E> {
 	 * 
 	 * @return The Tabu List.
 	 */
-	public abstract ArrayDeque<Movement> makeTL();
+	public abstract ArrayDeque<List<Integer>> makeTL();
 
 	/**
 	 * The TS local search phase is responsible for repeatedly applying a

@@ -1,7 +1,6 @@
 package problems.ecvrp.solver;
 
 import problems.Evaluator;
-import problems.ecvrp.Movement;
 import problems.ecvrp.Pair;
 import problems.ecvrp.Utils;
 import solutions.RechargePoint;
@@ -50,11 +49,7 @@ public class TS_EVRP_NEIGHBORHOOD {
         route2.clients.add(client2Idx, client1);
         currentCost += ObjFunction.evaluateRoute(route1) + ObjFunction.evaluateRoute(route2);
 
-        Movement mov = new Movement();
-        mov.setType(Utils.MOVE_RELOCATE_CLIENT);
-        mov.setIndexes(List.of(route1Idx, route2Idx, client1Idx, client2Idx));
-
-        return new Pair(currentCost, mov);
+        return new Pair(currentCost, List.of(Utils.MOVE_RELOCATE_CLIENT, route1Idx, route2Idx, client1Idx, client2Idx));
     }
 
     public Pair insertAChargingStationInRandomRoute(Solution<Route> sol) {
@@ -71,19 +66,13 @@ public class TS_EVRP_NEIGHBORHOOD {
         RechargePoint newCSinRout = new RechargePoint(freeCSs.get(csToInsertIdx), clientIdx);
         Route tempRoute = sol.getRouteCopy(routeIdx);
 
-        Double oldCost = sol.getRoute(routeIdx).cost;
-
+        double oldRouteCost = sol.getRoute(routeIdx).cost;
         tempRoute.addCS(newCSinRout);
         Double newCost = ObjFunction.evaluateRoute(tempRoute);
 
-        Double currentCost = sol.cost - oldCost + newCost;
+        Double currentCost = sol.cost - oldRouteCost + newCost;
 
-        Movement mov = Movement.builder()
-                .type(Utils.MOVE_INSERT_CS)
-                .indexes(List.of(routeIdx, clientIdx, freeCSs.get(csToInsertIdx)))
-                .build();
-
-        return new Pair(currentCost, mov);
+        return new Pair(currentCost, List.of(Utils.MOVE_INSERT_CS, routeIdx, clientIdx, freeCSs.get(csToInsertIdx)));
     }
 
     protected Pair removeChargingStationInRandomRoute(Solution<Route> sol) {
@@ -101,8 +90,7 @@ public class TS_EVRP_NEIGHBORHOOD {
 
         Double currentCost = sol.cost + currentCostRoute - oldCostRoute;
 
-        Movement mov = Movement.builder().type(Utils.MOVE_REMOVE_CS).indexes(List.of(posRoute, index)).build();
-        return new Pair(currentCost, mov);
+        return new Pair(currentCost, List.of(Utils.MOVE_REMOVE_CS, posRoute, index));
     }
 
     protected Set<Integer> getFreeChargingStations(Solution<Route> sol) {
@@ -147,26 +135,18 @@ public class TS_EVRP_NEIGHBORHOOD {
         Double newRoutesCost = ObjFunction.evaluateRoute(route1) + ObjFunction.evaluateRoute(route2);
         newCost += newRoutesCost;
 
-        Movement mov = Movement
-                .builder()
-                .type(Utils.SWAP_MOVE)
-                .indexes(List.of(routeAIdx, routeBIdx, client1Idx, client2Idx))
-                .build();
-
-        return new Pair(newCost, mov);
+        return new Pair(newCost, List.of(Utils.SWAP_MOVE, routeAIdx, routeBIdx, client1Idx, client2Idx));
     }
 
-
-    protected void applyInsertCsMove(Solution<Route> sol, int routeIdx, int clientIdx, int csToInsertIdx){
-        Double oldCostRoute = sol.getRouteCopy(routeIdx).cost;
-        sol.addCS(routeIdx, clientIdx, csToInsertIdx);
-        Double newRoute = ObjFunction.evaluateRoute(sol.getRouteCopy(routeIdx));
-        sol.routes.get(routeIdx).cost = newRoute;
-        sol.cost = sol.cost -oldCostRoute + newRoute;
+    protected void applyInsertCsMove(Solution<Route> sol, int routeIdx, int clientIdx, int csToInsert){
+        double oldCostRoute = sol.getRoute(routeIdx).cost;
+        sol.addCS(routeIdx, clientIdx, csToInsert);
+        double newRoute = ObjFunction.evaluateRoute(sol.getRoute(routeIdx));
+        sol.cost = sol.cost - oldCostRoute + newRoute;
     }
 
     protected void applyRemoveCsMove(Solution<Route> sol, int routeIdx, int indexToRemove){
-        Double oldCostRoute = sol.getRouteCopy(routeIdx).cost;
+        double oldCostRoute = sol.getRouteCopy(routeIdx).cost;
         sol.routes.get(routeIdx).removeCS(indexToRemove);
         Double newRoute = ObjFunction.evaluateRoute(sol.getRouteCopy(routeIdx));
         sol.routes.get(routeIdx).cost = newRoute;
@@ -191,30 +171,31 @@ public class TS_EVRP_NEIGHBORHOOD {
         sol.cost = tempCost + ObjFunction.evaluateRoute(routeA) + ObjFunction.evaluateRoute(routeB);
     }
 
-    protected void applyMove(Solution<Route> sol, Movement mov) throws Exception {
-        if (Objects.equals(mov.type, Utils.SWAP_MOVE)) {
-            int routeAIdx = mov.getIndexes().get(0);
-            int routeBIdx = mov.getIndexes().get(1);
-            int clientIdxA = mov.getIndexes().get(2);
-            int clientIdxB = mov.getIndexes().get(3);
+    protected void applyMove(Solution<Route> sol, List<Integer> mov) throws Exception {
+        int moveType = mov.get(0);
+        if (Objects.equals(moveType, Utils.SWAP_MOVE)) {
+            int routeAIdx = mov.get(1);
+            int routeBIdx = mov.get(2);
+            int clientIdxA = mov.get(3);
+            int clientIdxB = mov.get(4);
 
             apply2OptMove(sol, routeAIdx, routeBIdx, clientIdxA, clientIdxB);
-        } else if (Objects.equals(mov.type, Utils.MOVE_INSERT_CS)) {
-            int routeIdx = mov.getIndexes().get(0);
-            int clientIdx = mov.getIndexes().get(1);
-            int csToInsertIdx = mov.getIndexes().get(2);
-            applyInsertCsMove(sol, routeIdx, clientIdx, csToInsertIdx);
+        } else if (Objects.equals(moveType, Utils.MOVE_INSERT_CS)) {
+            int routeIdx = mov.get(1);
+            int clientIdx = mov.get(2);
+            int csToInsert = mov.get(3);
+            applyInsertCsMove(sol, routeIdx, clientIdx, csToInsert);
 
-        } else if (Objects.equals(mov.type, Utils.MOVE_REMOVE_CS)) {
-            int routeIdx = mov.getIndexes().get(0);
-            int indexToRemove = mov.getIndexes().get(1);
+        } else if (Objects.equals(moveType, Utils.MOVE_REMOVE_CS)) {
+            int routeIdx = mov.get(1);
+            int indexToRemove = mov.get(2);
             applyRemoveCsMove(sol, routeIdx, indexToRemove);
 
-        } else  if (Objects.equals(mov.type, MOVE_RELOCATE_CLIENT)){
-            int routeIdx1 = mov.getIndexes().get(0);
-            int routeIdx2 = mov.getIndexes().get(1);
-            int clientIdx1 = mov.getIndexes().get(2);
-            int clientIdx2 = mov.getIndexes().get(3);
+        } else  if (Objects.equals(moveType, MOVE_RELOCATE_CLIENT)){
+            int routeIdx1 = mov.get(1);
+            int routeIdx2 = mov.get(2);
+            int clientIdx1 = mov.get(3);
+            int clientIdx2 = mov.get(4);
 
             applyReallocateClientMove(sol, routeIdx1, routeIdx2, clientIdx1, clientIdx2);
         }
@@ -224,26 +205,19 @@ public class TS_EVRP_NEIGHBORHOOD {
 
         int client1 = sol.getRoute(routeIdx1).clients.get(clientIdx1);
 
-        if(routeIdx1 == routeIdx2){
-            sol.getRoute(routeIdx1).clients.add(clientIdx2, client1);
-            sol.getRoute(routeIdx1).clients.remove(clientIdx1);
-            sol.cost -= sol.getRoute(routeIdx1).cost;
-            Double newCost = ObjFunction.evaluateRoute(sol.getRoute(routeIdx1));
-            sol.getRoute(routeIdx1).cost = newCost;
-            sol.cost += newCost;
-        } else {
-            Route route1 = sol.getRoute(routeIdx1);
-            route1.clients.remove(clientIdx1);
-            Route route2 = sol.getRoute(routeIdx2);
-            route2.clients.add(clientIdx2, client1);
+        Route route1 = sol.getRoute(routeIdx1);
+        Route route2 = sol.getRoute(routeIdx2);
 
-            sol.cost -= route1.cost;
-            Double newCost1 = ObjFunction.evaluateRoute(route1);
-            sol.cost -= route2.cost;
-            Double newCost2 = ObjFunction.evaluateRoute(route2);
-            route1.cost = newCost1;
-            route2.cost = newCost2;
-            sol.cost += newCost1 + newCost2;
-        }
+        route1.clients.remove(clientIdx1);
+        route2.clients.add(clientIdx2, client1);
+
+        sol.cost -= route1.cost;
+        Double newCost1 = ObjFunction.evaluateRoute(route1);
+        sol.cost -= route2.cost;
+        Double newCost2 = ObjFunction.evaluateRoute(route2);
+        route1.cost = newCost1;
+        route2.cost = newCost2;
+        sol.cost += newCost1 + newCost2;
+
     }
 }
