@@ -117,6 +117,7 @@ public class TS_ECVRP extends AbstractTS<Route> {
         long startTime = System.currentTimeMillis();
         int fleetSize = 3;
         TS_ECVRP tabusearch = new TS_ECVRP(30, 10000, "instances/c101C5.txt", fleetSize);
+//        208,9
 
         verbose = true;
         Solution<Route> bestSol = tabusearch.solve();

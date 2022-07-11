@@ -27,41 +27,32 @@ public class TS_EVRP_NEIGHBORHOOD {
     }
 
     protected Pair removeClientAndInsertInAnotherRoute(Solution<Route> sol) {
-        int posRoute = Utils.getRandomNumber(0, ObjFunction.getNumberRoutes() - 1);
+        int route1Idx = Utils.getRandomNumber(0, ObjFunction.getNumberRoutes() - 1);
+        int route2Idx = Utils.getRandomNumber(0, ObjFunction.getNumberRoutes() - 1);
 
-        if (sol.getRoute(posRoute).clients.size() == 0) {
-            return null;
-        }
+        while (route2Idx == route1Idx)
+            route2Idx = Utils.getRandomNumber(0, ObjFunction.getNumberRoutes() - 1);
+
+        if (route1Idx > route2Idx) swap(route1Idx, route2Idx);
+
+        Route route1 = sol.getRouteCopy(route1Idx);
+        if (route1.clients.size() == 0)  return null;
+        Route route2 = sol.getRouteCopy(route2Idx);
 
 
-        int posClient1 = Utils.getRandomNumber(0, sol.getRoute(posRoute).getClients().size() - 1);
-        int client1 = sol.getRoute(posRoute).clients.get(posClient1);
+        int client1Idx = Utils.getRandomNumber(0, route1.clients.size() - 1);
+        int client2Idx = Utils.getRandomNumber(0, route2.clients.size());
+        int client1 = route1.clients.get(client1Idx);
 
-        Route route1 = sol.getRouteCopy(posRoute);
+        double currentCost = sol.cost - route1.cost - route2.cost;
 
-        int posRoute2 = Utils.getRandomNumber(0, ObjFunction.getNumberRoutes() - 1);
-        int posClient2 = Utils.getRandomNumber(0, sol.getRoute(posRoute2).getClients().size());
-
-        Double currentCost = sol.cost;
-
-        if(posRoute == posRoute2){
-            route1.clients.add(posClient2, client1);
-            route1.clients.remove(posClient1);
-            currentCost -= sol.getRoute(posRoute).cost;
-            currentCost += ObjFunction.evaluateRoute(route1);
-        } else {
-            Route route2 = sol.getRouteCopy(posRoute2);
-            route1.clients.remove(posClient1);
-            route2.clients.add(posClient2, client1);
-            currentCost -= route1.cost;
-            currentCost += ObjFunction.evaluateRoute(route1);
-            currentCost -= route2.cost;
-            currentCost += ObjFunction.evaluateRoute(route2);
-        }
+        route1.clients.remove(client1Idx);
+        route2.clients.add(client2Idx, client1);
+        currentCost += ObjFunction.evaluateRoute(route1) + ObjFunction.evaluateRoute(route2);
 
         Movement mov = new Movement();
         mov.setType(Utils.MOVE_RELOCATE_CLIENT);
-        mov.setIndexes(List.of(posRoute, posRoute2, posClient1, posClient2));
+        mov.setIndexes(List.of(route1Idx, route2Idx, client1Idx, client2Idx));
 
         return new Pair(currentCost, mov);
     }
