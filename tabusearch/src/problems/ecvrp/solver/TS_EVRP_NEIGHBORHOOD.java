@@ -32,24 +32,24 @@ public class TS_EVRP_NEIGHBORHOOD {
         while (route2Idx == route1Idx)
             route2Idx = Utils.getRandomNumber(0, ObjFunction.getNumberRoutes() - 1);
 
-        if (route1Idx > route2Idx) swap(route1Idx, route2Idx);
-
         Route route1 = sol.getRouteCopy(route1Idx);
         if (route1.clients.size() == 0)  return null;
         Route route2 = sol.getRouteCopy(route2Idx);
 
 
-        int client1Idx = Utils.getRandomNumber(0, route1.clients.size() - 1);
-        int client2Idx = Utils.getRandomNumber(0, route2.clients.size());
-        int client1 = route1.clients.get(client1Idx);
+        int idxToRemove = Utils.getRandomNumber(0, route1.clients.size() - 1);
+        int idxToInsert = Utils.getRandomNumber(0, route2.clients.size());
+        int client = route1.clients.get(idxToRemove);
 
         double currentCost = sol.cost - route1.cost - route2.cost;
 
-        route1.clients.remove(client1Idx);
-        route2.clients.add(client2Idx, client1);
+        route1.clients.remove(idxToRemove);
+        route2.clients.add(idxToInsert, client);
         currentCost += ObjFunction.evaluateRoute(route1) + ObjFunction.evaluateRoute(route2);
 
-        return new MoveWithCost(currentCost, List.of(Utils.MOVE_RELOCATE_CLIENT, route1Idx, route2Idx, client1Idx, client2Idx));
+        return new MoveWithCost(currentCost, List.of(
+                Utils.MOVE_RELOCATE_CLIENT, route1Idx, route2Idx, client, idxToRemove, idxToInsert
+        ));
     }
 
     public MoveWithCost insertAChargingStationInRandomRoute(Solution<Route> sol) {
@@ -195,22 +195,20 @@ public class TS_EVRP_NEIGHBORHOOD {
         } else  if (Objects.equals(moveType, MOVE_RELOCATE_CLIENT)){
             int routeIdx1 = mov.get(1);
             int routeIdx2 = mov.get(2);
-            int clientIdx1 = mov.get(3);
-            int clientIdx2 = mov.get(4);
+            int client = mov.get(3);
+            int idxFrom = mov.get(4);
+            int idxToInsert = mov.get(5);
 
-            applyReallocateClientMove(sol, routeIdx1, routeIdx2, clientIdx1, clientIdx2);
+            applyReallocateClientMove(sol, routeIdx1, routeIdx2, client, idxFrom, idxToInsert);
         }
     }
 
-    private void applyReallocateClientMove(Solution<Route> sol, int routeIdx1, int routeIdx2, int clientIdx1, int clientIdx2) {
-
-        int client1 = sol.getRoute(routeIdx1).clients.get(clientIdx1);
-
+    private void applyReallocateClientMove(Solution<Route> sol, int routeIdx1, int routeIdx2, int client, int idxToRemove, int idxToInsert) {
         Route route1 = sol.getRoute(routeIdx1);
         Route route2 = sol.getRoute(routeIdx2);
 
-        route1.clients.remove(clientIdx1);
-        route2.clients.add(clientIdx2, client1);
+        route1.clients.remove(idxToRemove);
+        route2.clients.add(idxToInsert, client);
 
         sol.cost -= route1.cost;
         Double newCost1 = ObjFunction.evaluateRoute(route1);

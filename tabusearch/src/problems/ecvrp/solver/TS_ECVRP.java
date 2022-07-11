@@ -11,8 +11,7 @@ import tabusearch.AbstractTS;
 import java.io.IOException;
 import java.util.*;
 
-import static problems.ecvrp.Utils.MOVE_INSERT_CS;
-import static problems.ecvrp.Utils.SWAP_MOVE;
+import static problems.ecvrp.Utils.*;
 
 
 public class TS_ECVRP extends AbstractTS<Route> {
@@ -69,8 +68,14 @@ public class TS_ECVRP extends AbstractTS<Route> {
 
     private List<Integer> resolveMoveToVerify(List<Integer> mov) {
         int moveType = mov.get(0);
-        if (moveType == SWAP_MOVE) {
-            return mov;
+        if (moveType == MOVE_RELOCATE_CLIENT) {
+            int routeIdx1 = mov.get(1);
+            int routeIdx2 = mov.get(2);
+            int client = mov.get(3);
+            int idxFrom = mov.get(4);
+            int idxToInsert = mov.get(5);
+
+            return List.of(routeIdx2, routeIdx1, client, idxToInsert, idxFrom);
         }
 
         return mov;
@@ -174,16 +179,18 @@ public class TS_ECVRP extends AbstractTS<Route> {
         long startTime = System.currentTimeMillis();
         int fleetSize = 13;
 //        TS_ECVRP tabusearch = new TS_ECVRP(5, 10000, "instances/c101C5.txt", fleetSize);
-        TS_ECVRP tabusearch = new TS_ECVRP(10, 10000, "instances/c201_21.txt", fleetSize);
+        while(true) {
+            TS_ECVRP tabusearch = new TS_ECVRP(10, 10000, "instances/c201_21.txt", fleetSize);
 //        208,9
 
-        verbose = true;
-        Solution<Route> bestSol = tabusearch.solve();
+            verbose = true;
+            Solution<Route> bestSol = tabusearch.solve();
 
-        System.out.println("minVal = " + bestSol);
-        System.out.println("valid = " + bestSol.isValid);
-        long endTime = System.currentTimeMillis();
-        long totalTime = endTime - startTime;
-        System.out.println("Time = " + (double) totalTime / (double) 1000 + " seg");
+            System.out.println("minVal = " + bestSol);
+            System.out.println("valid = " + bestSol.isValid);
+            long endTime = System.currentTimeMillis();
+            long totalTime = endTime - startTime;
+            System.out.println("Time = " + (double) totalTime / (double) 1000 + " seg");
+        }
     }
 }
