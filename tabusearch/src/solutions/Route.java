@@ -13,16 +13,20 @@ public class Route {
     public List<RechargePoint> chargingStations;
     public double cost;
 
-    public Route(List<Integer> clients, List<RechargePoint> chargingStations, double cost) {
+    public Boolean isValid;
+
+    public Route(List<Integer> clients, List<RechargePoint> chargingStations, double cost, boolean isValid) {
         this.clients = new ArrayList<>(clients);
         this.chargingStations = new ArrayList<>(chargingStations);
         this.cost = cost;
+        this.isValid = isValid;
     }
 
     public Route() {
         this.clients = new ArrayList<>();
         this.chargingStations = new ArrayList<>();
-        this.cost = Double.MAX_VALUE;
+        this.cost = 0;
+        this.isValid = true;
     }
 
     public void addClient(Integer e){
@@ -42,6 +46,6 @@ public class Route {
     }
 
     public Route getCopy() {
-        return new Route(this.clients, this.chargingStations, this.cost);
+        return new Route(this.clients, this.chargingStations, this.cost, this.isValid);
     }
 }

@@ -75,22 +75,23 @@ public class TS_EVRP_NEIGHBORHOOD {
         return new MoveWithCost(currentCost, List.of(Utils.MOVE_INSERT_CS, routeIdx, clientIdx, freeCSs.get(csToInsertIdx)));
     }
 
-    protected MoveWithCost removeChargingStationInRandomRoute(Solution<Route> sol) {
-        int posRoute = Utils.getRandomNumber(0, ObjFunction.getNumberRoutes() - 1);
-        Route route = sol.getRouteCopy(posRoute);
+    protected MoveWithCost removeChargingStationInRandomRoute(Solution<Route> sol) throws Exception {
+        int routeIdx = Utils.getRandomNumber(0, ObjFunction.getNumberRoutes() - 1);
+        Route route = sol.getRouteCopy(routeIdx);
+        double oldCostRoute = route.cost;
+
         if (route.chargingStations.size() == 0) {
             return null;
         }
-        int index = Utils.getRandomNumber(0, sol.getRouteCopy(posRoute).getChargingStations().size());
+        int index = Utils.getRandomNumber(0, sol.getRouteCopy(routeIdx).getChargingStations().size());
 
         route.removeCS(index);
 
-        Double oldCostRoute = sol.getRouteCopy(posRoute).cost;
-        Double currentCostRoute = ObjFunction.evaluateRoute(route);
+        double currentCostRoute = ObjFunction.evaluateRoute(route);
 
-        Double currentCost = sol.cost + currentCostRoute - oldCostRoute;
+        double newSolCost = sol.cost + currentCostRoute - oldCostRoute;
 
-        return new MoveWithCost(currentCost, List.of(Utils.MOVE_REMOVE_CS, posRoute, index));
+        return new MoveWithCost(newSolCost, List.of(Utils.MOVE_REMOVE_CS, routeIdx, index));
     }
 
     protected Set<Integer> getFreeChargingStations(Solution<Route> sol) {

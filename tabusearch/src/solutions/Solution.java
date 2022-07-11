@@ -8,6 +8,8 @@ public class Solution<E> {
 	
 	public double cost;
 	public List<Route> routes;
+
+	public Boolean isValid;
 	
 	public Solution(int fleetSize) {
 		this.routes = new ArrayList<>();
@@ -30,7 +32,7 @@ public class Solution<E> {
 
 	public Route getRouteCopy(int routeIdx) {
 		Route r = routes.get(routeIdx);
-		return new Route(r.clients, r.chargingStations, r.cost);
+		return new Route(r.clients, r.chargingStations, r.cost, r.isValid);
 	}
 
 	public Route getRoute(int routeIdx) {
@@ -39,7 +41,11 @@ public class Solution<E> {
 
 	@Override
 	public String toString() {
-		return "Solution: cost=[" + cost + "], fleetSize=[" + this.routes.size() + "], elements=" + super.toString();
+		String str = "\n";
+		for (Route r: routes) {
+			str += r.clients.toString() + "\n";
+		}
+		return "Solution: cost=[" + cost + "], fleetSize=[" + this.routes.size() + "], elements=" + str;
 	}
 
 	public void addClient(int randomRoutIdx, int client) {

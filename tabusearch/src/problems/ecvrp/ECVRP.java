@@ -5,6 +5,7 @@ import solutions.RechargePoint;
 import solutions.Route;
 import solutions.Solution;
 
+import javax.security.auth.callback.TextInputCallback;
 import java.io.*;
 import java.util.*;
 
@@ -164,16 +165,18 @@ public class ECVRP implements Evaluator<Route> {
     @Override
     public Double evaluate(Solution<Route> sol) throws Exception {
 
+        sol.isValid = true;
         Set<Integer> visitedClients = new HashSet<>();
         double sum = 0.;
         for (Route route : sol.routes) {
             evaluateRoute(route);
-
             sum += route.cost;
             visitedClients.addAll(route.clients);
+            sol.isValid = route.isValid;
         }
 
         if (visitedClients.size() != this.clientsNodes.size()) {
+            sol.isValid = false;
             return sol.cost = Double.MAX_VALUE;
         }
 
@@ -199,17 +202,14 @@ public class ECVRP implements Evaluator<Route> {
     @Override
     public Double evaluateRoute(Route route) {
 
+        route.isValid = true;
         if(route.clients.isEmpty()) {
             return route.cost = 0.0;
         }
 
         List<Integer> completeRoute = route.getClientsCopy();
         for(RechargePoint r : route.chargingStations) {
-            try {
-                completeRoute.add(min(r.index, completeRoute.size()-1), r.chargingStation);
-            } catch (Exception e) {
-                System.out.println("DEBUG ARRUMAR AQUI "  + r.index + " " + completeRoute.size() + " " + min(r.index, completeRoute.size()-1) + " " +e.getMessage());
-            }
+            completeRoute.add(min(r.index, completeRoute.size()-1), r.chargingStation);
         }
         completeRoute.add(0, depotNode);
         completeRoute.add(depotNode);
@@ -230,8 +230,8 @@ public class ECVRP implements Evaluator<Route> {
             time -= dist/this.velocity + servicesTimes.get(node2);
 
             if (battery < 0) {
-//                System.out.println("Battery Penalty");
                 cost += abs(battery) * PENALTY_BATTERY;
+                route.isValid = false;
             }
 
             if (chargeStationsNodes.contains(node2)) {
@@ -243,11 +243,11 @@ public class ECVRP implements Evaluator<Route> {
 
         if (time < 0)  {
             cost += abs(time) * PENALTY_TIME;
-//            System.out.println("Time Penalty");
+            route.isValid = false;
         }
         if (loadCapacity < 0) {
             cost += abs(loadCapacity) * PENALTY_CAPACITY;
-//            System.out.println("Load Penality");
+            route.isValid = false;
         }
 
         return route.cost = cost;

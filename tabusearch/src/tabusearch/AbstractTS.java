@@ -112,7 +112,6 @@ public abstract class AbstractTS<E> {
 //		return this.createARandomSolution();
 		return this.createGreedSolution();
 	}
-	public abstract void createInitialSolution() throws Exception;
 
 	/**
 	 * The TS mainframe. It consists of a constructive heuristic followed by
@@ -129,16 +128,14 @@ public abstract class AbstractTS<E> {
 		TL = makeTL();
 		for (int i = 0; i < iterations; i++) {
 			neighborhoodMove();
-//			System.out.println("(Iter. " + i + ") BestSol = " + this.sol);
 			if (bestSol.cost > sol.cost) {
 				bestSol = new Solution<E>(sol);
 				bestSol.cost = sol.cost;
-//				if (verbose) {
-					System.out.println("(Iter. " + i + ") BestSol = " + bestSol);
-//				}
+				System.out.println("(Iter. " + i + ") BestSol = " + sol.cost + " ,isValid = " + sol.isValid);
 			}
 		}
 
+		ObjFunction.evaluate(bestSol);
 		return bestSol;
 	}
 

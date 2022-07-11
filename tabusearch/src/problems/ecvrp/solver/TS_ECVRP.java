@@ -11,6 +11,9 @@ import tabusearch.AbstractTS;
 import java.io.IOException;
 import java.util.*;
 
+import static problems.ecvrp.Utils.MOVE_INSERT_CS;
+import static problems.ecvrp.Utils.SWAP_MOVE;
+
 
 public class TS_ECVRP extends AbstractTS<Route> {
 
@@ -28,15 +31,10 @@ public class TS_ECVRP extends AbstractTS<Route> {
     }
 
     @Override
-    public void createInitialSolution() throws Exception {
-        this.sol = createARandomSolution();
-    }
-
-    @Override
     public Solution<Route> neighborhoodMove() throws Exception {
         List<MoveWithCost> possibleMoves = new ArrayList<>();
 
-        for (int i = 0; i < 30; ++i) {
+        for (int i = 0; i < this.ObjFunction.getNumberClients(); ++i) {
             MoveWithCost moveA = neighborhood.insertAChargingStationInRandomRoute(this.sol);
             MoveWithCost moveB = neighborhood.removeChargingStationInRandomRoute(this.sol);
             MoveWithCost moveC = neighborhood.removeClientAndInsertInAnotherRoute(this.sol);
@@ -49,8 +47,13 @@ public class TS_ECVRP extends AbstractTS<Route> {
         }
 
         possibleMoves.sort(Comparator.comparingDouble(MoveWithCost::getCost));
-
+//        System.out.println("SolCost =  " + sol.cost);
+//        for (MoveWithCost x : possibleMoves) {
+//            System.out.print( x.cost + " # " + x.mov + ", ");
+//        }
+//        System.out.println();
         for (MoveWithCost p : possibleMoves) {
+            List<Integer> mov = resolveMoveToVerify(p.mov);
             if (!this.TL.contains(p.mov) || p.cost < this.bestSol.cost) {
                 neighborhood.applyMove(this.sol, p.mov);
                 ObjFunction.evaluate(this.sol);
@@ -59,12 +62,18 @@ public class TS_ECVRP extends AbstractTS<Route> {
                     TL.pop();
                 }
                 break;
-            } else {
-                System.out.println(TL);
-                System.out.println(" >>> " + p.mov);
             }
         }
         return null;
+    }
+
+    private List<Integer> resolveMoveToVerify(List<Integer> mov) {
+        int moveType = mov.get(0);
+        if (moveType == SWAP_MOVE) {
+            return mov;
+        }
+
+        return mov;
     }
 
     @Override
@@ -126,7 +135,7 @@ public class TS_ECVRP extends AbstractTS<Route> {
 
         for (int i = 0; i < this.fleetSize; i++) {
             Route route = new Route();
-            double capacity = this.ObjFunction.getBatteryCapacity();
+            double capacity = this.ObjFunction.getLoadCapacity();
             double time = this.ObjFunction.getTimeAvailable();
             double battery = this.ObjFunction.getBatteryCapacity();
             List<Double> demands = this.ObjFunction.getDemands();
@@ -139,8 +148,10 @@ public class TS_ECVRP extends AbstractTS<Route> {
                 }
                 int closestNode = clients.get(closestIdx);
                 double dist = ObjFunction.calcDist(curNode, closestNode);
+
                 battery -= dist;
                 capacity -= demands.get(closestNode);
+
                 route.addClient(closestNode);
                 clients.remove(closestIdx);
                 curNode = closestNode;
@@ -159,34 +170,18 @@ public class TS_ECVRP extends AbstractTS<Route> {
         return this.sol;
     }
 
-    public void printSolution_test(){
-        int idx = 0;
-        System.out.println("Total Cost: " + this.sol.cost);
-        for(Route route: this.sol.routes) {
-            System.out.println("Route: " + idx + " Cost:" + route.cost);
-            System.out.println("Clients: " + route.clients);
-
-            System.out.print("CS: ");
-            for(RechargePoint cs: route.chargingStations) {
-                System.out.print("(" + cs.chargingStation + "," + cs.index +")");
-            }
-            System.out.println("\n");
-        }
-        System.out.println("\n\n");
-    }
-
-    // just to tests
     public static void main(String[] args) throws Exception {
         long startTime = System.currentTimeMillis();
-        int fleetSize = 3;
-        TS_ECVRP tabusearch = new TS_ECVRP(5, 10000, "instances/c101C5.txt", fleetSize);
-//        TS_ECVRP tabusearch = new TS_ECVRP(5, 10000, "instances/c201_21.txt", fleetSize);
+        int fleetSize = 13;
+//        TS_ECVRP tabusearch = new TS_ECVRP(5, 10000, "instances/c101C5.txt", fleetSize);
+        TS_ECVRP tabusearch = new TS_ECVRP(10, 10000, "instances/c201_21.txt", fleetSize);
 //        208,9
 
         verbose = true;
         Solution<Route> bestSol = tabusearch.solve();
 
         System.out.println("minVal = " + bestSol);
+        System.out.println("valid = " + bestSol.isValid);
         long endTime = System.currentTimeMillis();
         long totalTime = endTime - startTime;
         System.out.println("Time = " + (double) totalTime / (double) 1000 + " seg");
