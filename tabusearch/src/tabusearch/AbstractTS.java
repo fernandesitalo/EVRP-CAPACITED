@@ -6,6 +6,7 @@ package tabusearch;
 import java.util.*;
 
 import problems.Evaluator;
+import solutions.Route;
 import solutions.Solution;
 
 import static java.lang.Math.abs;
@@ -99,6 +100,8 @@ public abstract class AbstractTS<E> {
 		this.iterations = iterations;
 	}
 
+	protected abstract void countFrequency(Solution<E> sol);
+
 	public abstract Solution<E> createARandomSolution() throws Exception;
 
 	public Solution<E> initialSolution() throws Exception {
@@ -119,13 +122,20 @@ public abstract class AbstractTS<E> {
 		bestSol = new Solution<E>(this.ObjFunction.getFleetSize());
 		initialSolution();
 		TL = makeTL();
+		int noImproveIterations = 0;
 		for (int i = 0; i < iterations; i++) {
+			if (noImproveIterations > 600) {
+				sol = createSolutionToRestart();
+				noImproveIterations = 0;
+			}
 			neighborhoodMove();
+			countFrequency(sol);
 			if (bestSol.cost > sol.cost) {
 				bestSol = new Solution<E>(sol);
 				bestSol.cost = sol.cost;
 //				System.out.println("(Iter. " + i + ") BestSol = " + sol.cost + " ,isValid = " + sol.isValid);
-			}
+				noImproveIterations = 0;
+			} else noImproveIterations++;
 		}
 
 		ObjFunction.evaluate(bestSol);
@@ -133,4 +143,6 @@ public abstract class AbstractTS<E> {
 	}
 
 	public abstract Solution<E> createGreedSolution() throws Exception;
+
+	public abstract Solution<E> createSolutionToRestart() throws Exception;
 }

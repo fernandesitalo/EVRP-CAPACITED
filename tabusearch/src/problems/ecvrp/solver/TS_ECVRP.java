@@ -1,6 +1,7 @@
 package problems.ecvrp.solver;
 
 import problems.ecvrp.ECVRP;
+import problems.ecvrp.EdgeFrequency;
 import problems.ecvrp.MoveWithCost;
 import problems.ecvrp.Utils;
 import solutions.Route;
@@ -9,6 +10,7 @@ import tabusearch.AbstractTS;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static java.lang.Math.min;
 import static problems.ecvrp.Utils.*;
@@ -18,11 +20,21 @@ public class TS_ECVRP extends AbstractTS<Route> {
 
     TS_EVRP_NEIGHBORHOOD neighborhood;
     int fleetSize;
+    int n;
+
+    int edgeFrequency[][];
 
     public TS_ECVRP(Integer tenure, Integer iterations, ECVRP instance) throws IOException {
         super(instance, tenure, iterations);
         this.fleetSize = instance.fleetSize;
         this.neighborhood = new TS_EVRP_NEIGHBORHOOD(this.ObjFunction, this.fleetSize);
+        this.n = instance.getNumberClients() + instance.getNumberChargingStations() + 1;
+        this.edgeFrequency = new int[n][n];
+        for(int i = 0; i < n; i++) {
+            for(int j = 0; j < n; j++) {
+                edgeFrequency[i][j] = 0;
+            }
+        }
     }
 
     @Override
@@ -48,11 +60,7 @@ public class TS_ECVRP extends AbstractTS<Route> {
         }
 
         possibleMoves.sort(Comparator.comparingDouble(MoveWithCost::getCost));
-//        System.out.println("SolCost =  " + sol.cost);
-//        for (MoveWithCost x : possibleMoves) {
-//            System.out.print( x.cost + " # " + x.mov + ", ");
-//        }
-//        System.out.println();
+
         for (MoveWithCost p : possibleMoves) {
             List<Integer> mov = resolveMoveToVerify(p.mov);
             if (!this.TL.contains(p.mov) || p.cost < this.bestSol.cost) {
@@ -66,6 +74,17 @@ public class TS_ECVRP extends AbstractTS<Route> {
             }
         }
         return null;
+    }
+
+    @Override
+    protected void countFrequency(Solution<Route> sol) {
+        for(Route r : sol.routes) {
+            for(int i = 1; i < r.clients.size(); i++) {
+                int u = r.clients.get(i-1);
+                int v = r.clients.get(i);
+                edgeFrequency[u][v]++;
+            }
+        }
     }
 
     private List<Integer> resolveMoveToVerify(List<Integer> mov) {
@@ -110,6 +129,85 @@ public class TS_ECVRP extends AbstractTS<Route> {
         }
 
         this.sol.cost = ObjFunction.evaluate(this.sol);
+
+        return this.sol;
+    }
+
+    public List<EdgeFrequency> removeEdges(List<EdgeFrequency> edges, int node1, int node2) {
+        return edges.stream().filter((EdgeFrequency e) -> e.from != node1 && e.to != node1 && e.from != node2 && e.to != node2).collect(Collectors.toList());
+    }
+
+
+    @Override
+    public Solution<Route> createSolutionToRestart() throws Exception {
+        List<EdgeFrequency> edges = new ArrayList<>();
+        for (int i : ObjFunction.getClients()) {
+            for (int j : ObjFunction.getClients()) {
+                if (i == j) {
+                    continue;
+                }
+
+                edges.add(new EdgeFrequency(i, j, edgeFrequency[i][j]));
+            }
+        }
+        edges.sort(Comparator.comparingDouble(EdgeFrequency::getCnt));
+
+        this.sol = new Solution<Route>(this.fleetSize);
+        double capacity[] = new double[fleetSize];
+        double time[] = new double[fleetSize];
+        double battery[] = new double[fleetSize];
+        List<Double> demands = this.ObjFunction.getDemands();
+
+        for(int i = 0; i < fleetSize; i++){
+            capacity[i] = ObjFunction.getLoadCapacity();
+            battery[i] = ObjFunction.getBatteryCapacity();
+            time[i] = ObjFunction.getTimeAvailable();
+        }
+
+        List<Integer> clients = ObjFunction.getClients();
+        for (int i = 0; i < this.fleetSize && !edges.isEmpty(); i++){
+            int from = edges.get(0).from;
+            int to = edges.get(0).to;
+
+            int idxToRemove = clients.lastIndexOf(from);
+            clients.remove(idxToRemove);
+            idxToRemove = clients.lastIndexOf(to);
+            clients.remove(idxToRemove);
+            edges = removeEdges(edges, from, to);
+
+            double dist = ObjFunction.calcDist(0, from) + ObjFunction.calcDist(from, to);
+
+            capacity[i] = this.ObjFunction.getLoadCapacity() - demands.get(from) - demands.get(to);
+            battery[i] = this.ObjFunction.getBatteryCapacity() - dist;
+
+
+            sol.getRoute(i).addClient(from);
+            sol.getRoute(i).addClient(to);
+        }
+
+        int r = 0;
+        while(!clients.isEmpty()) {
+
+            if (r > 10000) {
+                throw new Exception("Asdadadsdasd");
+            }
+//            System.out.println(r);
+            Route route = sol.routes.get(r);
+            int curNode = route.clients.isEmpty() ? 0 : route.clients.get(route.clients.size()-1);
+            int closestIdx = findClosestClient(curNode, clients, capacity[r], time[r], battery[r], demands);
+
+            if (closestIdx != -1) {
+                int closestNode = clients.get(closestIdx);
+                double dist = ObjFunction.calcDist(curNode, closestNode);
+                battery[r] -= dist;
+                capacity[r] -= demands.get(closestNode);
+                route.addClient(closestNode);
+                clients.remove(closestIdx);
+            }
+            r++;
+        }
+
+        ObjFunction.evaluate(this.sol);
 
         return this.sol;
     }
@@ -163,6 +261,7 @@ public class TS_ECVRP extends AbstractTS<Route> {
                 clients.remove(closestIdx);
                 curNode = closestNode;
             }
+            ObjFunction.evaluate(this.sol);
             this.sol.routes.add(route);
         }
 
