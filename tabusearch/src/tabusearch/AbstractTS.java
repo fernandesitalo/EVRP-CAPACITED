@@ -123,6 +123,9 @@ public abstract class AbstractTS<E> {
 		initialSolution();
 		TL = makeTL();
 		int noImproveIterations = 0;
+		if(verbose) {
+			System.out.println("iteration\tcost");
+		}
 		for (int i = 0; i < iterations; i++) {
 			if (noImproveIterations > 600) {
 				sol = createSolutionToRestart();
@@ -133,7 +136,9 @@ public abstract class AbstractTS<E> {
 			if (bestSol.cost > sol.cost) {
 				bestSol = new Solution<E>(sol);
 				bestSol.cost = sol.cost;
-//				System.out.println("(Iter. " + i + ") BestSol = " + sol.cost + " ,isValid = " + sol.isValid);
+				if(verbose) {
+					System.out.println(i + "\t" + sol.cost);
+				}
 				noImproveIterations = 0;
 			} else noImproveIterations++;
 		}

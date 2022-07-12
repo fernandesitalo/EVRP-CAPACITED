@@ -301,7 +301,7 @@ public class TS_ECVRP extends AbstractTS<Route> {
             for (double fleetSizeFactor : fleetSizeFactors) {
                 ECVRP instance = new ECVRP(instanceDir, fleetSizeFactor);
                 TS_ECVRP ts = new TS_ECVRP(10, 10000, instance);
-                verbose = false;
+                verbose = true;
 
                 double minCost = Double.MAX_VALUE;
                 double avgCost = 0;
@@ -309,7 +309,7 @@ public class TS_ECVRP extends AbstractTS<Route> {
                 boolean isValid = false;
                 int usedEvs = 0;
 
-                for (int i = 0; i < 10; i++) {
+                for (int i = 0; i < 1; i++) {
                     long startTime = System.currentTimeMillis();
                     Solution<Route> sol = ts.solve();
                     if (sol.cost < minCost) {
@@ -327,8 +327,8 @@ public class TS_ECVRP extends AbstractTS<Route> {
                     avgTime += (double) (System.currentTimeMillis() - startTime) / (double) 1000;
                 }
 
-                avgCost /= 10;
-                avgTime /= 10;
+                avgCost /= 1;
+                avgTime /= 1;
 
                 //            System.out.print("instance clients chargeStations batteryCapacity loadCapacity fs usedEVs time F avgF isValid");
                 System.out.printf(
