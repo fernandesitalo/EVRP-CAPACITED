@@ -3,8 +3,6 @@ package problems.ecvrp;
 import java.util.Random;
 
 public class Utils {
-    public static final Integer BAD_BLOCK = -1;
-    public static final Integer GOOD_BLOCK = -2;
 
     public static final Integer SWAP_MOVE = -10;
     public static final Integer MOVE_INSERT_CS = -20;

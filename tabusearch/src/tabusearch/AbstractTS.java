@@ -36,11 +36,6 @@ public abstract class AbstractTS<E> {
 	protected Evaluator<E> ObjFunction;
 
 	/**
-	 * the best solution cost
-	 */
-//	protected Double bestCost;
-
-	/**
 	 * the best solution
 	 */
 	protected Solution<E> bestSol;
@@ -114,23 +109,7 @@ public abstract class AbstractTS<E> {
 	 * @return The best feasible solution obtained throughout all iterations.
 	 */
 
-	public Solution<E> solve() throws Exception {
-
-		bestSol = new Solution<E>(this.ObjFunction.getFleetSize());
-		initialSolution();
-		TL = makeTL();
-		for (int i = 0; i < iterations; i++) {
-			neighborhoodMove();
-			if (bestSol.cost > sol.cost) {
-				bestSol = new Solution<E>(sol);
-				bestSol.cost = sol.cost;
-//				System.out.println("(Iter. " + i + ") BestSol = " + sol.cost + " ,isValid = " + sol.isValid);
-			}
-		}
-
-		ObjFunction.evaluate(bestSol);
-		return bestSol;
-	}
+	public abstract Solution<E> solve() throws Exception;
 
 	public abstract Solution<E> createGreedSolution() throws Exception;
 }

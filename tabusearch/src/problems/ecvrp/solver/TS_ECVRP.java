@@ -19,10 +19,20 @@ public class TS_ECVRP extends AbstractTS<Route> {
     TS_EVRP_NEIGHBORHOOD neighborhood;
     int fleetSize;
 
+    public Map<Integer, Map<Integer, Integer>> edgeFreq;
+    public Integer costSolFreq;
+    public Integer bestFreq;
+    public Long totalFreq;
+
+
     public TS_ECVRP(Integer tenure, Integer iterations, ECVRP instance) throws IOException {
         super(instance, tenure, iterations);
         this.fleetSize = instance.fleetSize;
         this.neighborhood = new TS_EVRP_NEIGHBORHOOD(this.ObjFunction, this.fleetSize);
+        this.edgeFreq = new TreeMap<>();
+        this.costSolFreq = 0;
+        this.bestFreq = 0;
+        this.totalFreq = Long.valueOf(0);
     }
 
     @Override
@@ -123,13 +133,87 @@ public class TS_ECVRP extends AbstractTS<Route> {
             if (d > battery || demands.get(c) > capacity) {
                 continue;
             }
-            if (d  < dist) {
+            if (d < dist) {
                 dist = d;
                 clientIdx = i;
             }
         }
         return clientIdx;
     }
+
+    public Integer increaseFreqEdge(Integer a, Integer b) {
+        Map<Integer, Integer> mapA = edgeFreq.getOrDefault(a, new TreeMap<>());
+        Integer freqAB = mapA.getOrDefault(b, 0);
+        mapA.put(b,freqAB + 1);
+        edgeFreq.put(a, mapA);
+        return freqAB + 1;
+    }
+
+    public Integer getFreqEdge(Integer a, Integer b) {
+        Map<Integer, Integer> mapA = edgeFreq.getOrDefault(a, new TreeMap<>());
+        Integer freqAB = mapA.getOrDefault(b, 0);
+        return freqAB;
+    }
+
+    public void calculateFreqBest(){
+        this.bestFreq = 0;
+        for(int i = 0 ; i < this.fleetSize ; ++i) {
+            int lastClient = 0;// DEPOT NODE
+            for (Integer client : this.sol.getRoute(i).clients){
+                this.bestFreq += getFreqEdge(i,client);
+            }
+        }
+    }
+
+    public void increaseAndCalculateFreqSol(){
+        this.costSolFreq = 0;
+        for(int i = 0 ; i < this.fleetSize ; ++i) {
+            int lastClient = 0;// DEPOT NODE
+            for (Integer client : this.sol.getRoute(i).clients){
+                int freq = increaseFreqEdge(lastClient, client);
+                lastClient = client;
+                this.costSolFreq += freq;
+                this.totalFreq++;
+            }
+        }
+    }
+
+    public void calculateFreqSol(){
+        this.costSolFreq = 0;
+        for(int i = 0 ; i < this.fleetSize ; ++i) {
+            int lastClient = 0;// DEPOT NODE
+            for (Integer client : this.sol.getRoute(i).clients){
+                this.costSolFreq += this.edgeFreq.getOrDefault(lastClient, new HashMap<>()).getOrDefault(client, 0);
+                lastClient = client;
+            }
+        }
+    }
+
+
+    @Override
+    public Solution<Route> solve() throws Exception {
+
+        bestSol = new Solution<>(this.ObjFunction.getFleetSize());
+        initialSolution();
+        TL = makeTL();
+        for (int i = 1; i <= iterations; i++) {
+            neighborhoodMove();
+
+            increaseAndCalculateFreqSol();
+            calculateFreqBest();
+
+            if (bestSol.cost + bestFreq/(double)this.totalFreq > sol.cost + costSolFreq/(double)this.totalFreq) {
+                bestSol = new Solution<>(sol);
+                bestSol.cost = sol.cost;
+                bestFreq = costSolFreq;
+//                System.out.println(i-1 + "\t" + bestSol.cost);
+            }
+        }
+
+        ObjFunction.evaluate(bestSol);
+        return bestSol;
+    }
+
 
     @Override
     public Solution<Route> createGreedSolution() throws Exception {
@@ -138,7 +222,7 @@ public class TS_ECVRP extends AbstractTS<Route> {
         Collections.shuffle(clients);
         Collections.shuffle(chargingStations);
 
-        this.sol = new Solution<Route>(0);
+        this.sol = new Solution<>(0);
 
         for (int i = 0; i < this.fleetSize; i++) {
             Route route = new Route();
